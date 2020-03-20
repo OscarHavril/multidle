@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Game">
+  <meta name="author" content="Delta">
+  <META HTTP-EQUIV="Access-Control-Allow-Origin" CONTENT="frame.html">
+  <title id="title">Game whith a probable name</title>
+</head>
+
+<body style="background-color:black;color:white">
+  <canvas id="game"></canvas>
+  <button id="behave" onclick="cb()">Changer le comportement (Actuel: 1)</button>
+  <button id="range" onclick="cp()">Changer l'effet de portée (Actuel: 0)</button>
+  <script src="madlib.js"></script>
+  <script>
+    function cb() {
+      if (bubble.settings.generalBehavior < 1) { bubble.settings.generalBehavior++; }
+      else { bubble.settings.generalBehavior = -1; }
+      document.getElementById("behave").innerHTML = "Changer le comportement (Actuel: "+ bubble.settings.generalBehavior +")";
+    }
+    function cp() {
+      if (bubble.settings.generalRangeEffect < 1) { bubble.settings.generalRangeEffect++; }
+      else { bubble.settings.generalRangeEffect = -1; }
+      document.getElementById("range").innerHTML = "Changer l'effet de portée (Actuel: "+ bubble.settings.generalRangeEffect +")";
+    }
+    var c = document.getElementById("game")
+    c.width = document.documentElement.clientWidth;
+    c.height = document.documentElement.clientHeight;
+    var ctx = c.getContext("2d");
+    ctx.fillStyle = "#000000";
+    ctx.fillRect(0, 0, c.width, c.height);
+    console.log(c.width, c.height);
+    for (let i = 0; i < 70; i++) {
+      bubble.create(rand.int(1, c.width), rand.int(1, c.height), rand.real(4, 6, 2));
+    }
+    var timer = 0;
+    (function tick() {
+      for (let i = 0; i < bubble.data.length; i++) {
+        ctx.fillStyle = "#000000";
+        ctx.fillRect(bubble.data[i].x - 1, bubble.data[i].y - 1, 7, 7);
+        var a = bubble.tick(i, cursor.x, cursor.y);
+        if (a.x>=c.width) { bubble.edit(i, 0, rand.int(1, c.height)) }
+        ctx.fillStyle = "#FFFFFF";
+        ctx.fillRect(bubble.data[i].x, bubble.data[i].y, 5, 5);
+      }
+      setTimeout(tick, 1000 / 60);
+    })()
+  </script>
+</body>
+
+</html>
