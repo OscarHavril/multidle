@@ -4,10 +4,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Game">
+  <meta name="description" content="A demo for my next game AND for a library i'm making">
   <meta name="author" content="Delta">
   <META HTTP-EQUIV="Access-Control-Allow-Origin" CONTENT="frame.html">
   <title id="title">Game whith a probable name</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+    }
+  </style>
 </head>
 
 <body style="background-color:black;color:white">
@@ -16,6 +22,9 @@
   <button id="range" onclick="cp()">Changer l'effet de portée (Actuel: 0)</button>
   <script src="madlib.js"></script>
   <script>
+    bubble.settings.generalRangeEffect = 1;
+    bubble.settings.generalBehavior = 0;
+    key.enable = true;
     function cb() {
       if (bubble.settings.generalBehavior < 1) { bubble.settings.generalBehavior++; }
       else { bubble.settings.generalBehavior = -1; }
@@ -26,6 +35,20 @@
       else { bubble.settings.generalRangeEffect = -1; }
       document.getElementById("range").innerHTML = "Changer l'effet de portée (Actuel: " + bubble.settings.generalRangeEffect + ")";
     }
+    function pre() {
+      if (!toc) {
+        ctx.fillStyle = "#000000";
+        if (cursor.enable) { ctx.fillRect(cursor.x, cursor.y, 6, 6); }
+        else if (key.enable) { ctx.fillRect(key.pos.x, key.pos.y, 6, 6); }
+      }
+    }
+    function post() {
+      if (!toc) {
+        ctx.fillStyle = "#FF5C79";
+        if (cursor.enable) { ctx.fillRect(cursor.x, cursor.y, 6, 6); }
+        else if (key.enable) { ctx.fillRect(key.pos.x, key.pos.y, 6, 6); }
+      }
+    }
     var c = document.getElementById("game")
     c.width = document.documentElement.clientWidth;
     c.height = document.documentElement.clientHeight;
@@ -33,20 +56,43 @@
     ctx.fillStyle = "#000000";
     ctx.fillRect(0, 0, c.width, c.height);
     console.log(c.width, c.height);
-    for (let i = 0; i < 70; i++) {
-      bubble.create(rand.int(1, c.width), rand.int(1, c.height), rand.real(4, 6, 2));
+    for (let i = 0; i < 100; i++) {
+      bubble.create(rand.int(1, 100), rand.int(1, c.height), rand.real(3.5, 6.5, 2));
     }
-    var timer = 0;
+    var timer = 0.5;
+    var toc = false;
     (function tick() {
       for (let i = 0; i < bubble.data.length; i++) {
         ctx.fillStyle = "#000000";
-        ctx.fillRect(bubble.data[i].x - 1, bubble.data[i].y - 1, 7, 7);
-        var a = bubble.tick(i, cursor.x, cursor.y);
-        if (a.x >= c.width) { bubble.edit(i, 0, rand.int(1, c.height)) }
+        ctx.fillRect(Math.round(bubble.data[i].x), Math.round(bubble.data[i].y), 5, 5);
+        var x = bubble.data[i].x;
+        var y = bubble.data[i].y;
+        var a = {}
+        if (cursor.enable) { a = bubble.tick(i, cursor.x, cursor.y, timer); }
+        else if (key.enable) { a = bubble.tick(i, key.pos.x, key.pos.y, timer); }
+        var t = norm(a.x - bubble.data[i].x, a.y - bubble.data[i].y);
+        if (cursor.enable) {
+          if (t >= 6 * bubble.data[i].speed || norm(cursor.x - a.x, cursor.y - a.y) <= 5) {
+            bubble.edit(i, 0, rand.int(1, c.height));
+            console.log("Toc");
+            toc = true;
+          }
+        } else if (key.enable) {
+          if (t >= 6 * bubble.data[i].speed || norm(key.pos.x - a.x, key.pos.y - a.y) <= 5) {
+            console.log("Toc");
+            toc = true;
+          }
+        }
+        if (a.x >= c.width) { bubble.edit(i, 0, rand.int(1, c.height), rand.real(3.5, 6.5, 2)) }
         ctx.fillStyle = "#FFFFFF";
-        ctx.fillRect(bubble.data[i].x, bubble.data[i].y, 5, 5);
+        ctx.fillRect(Math.round(bubble.data[i].x), Math.round(bubble.data[i].y), 5, 5);
       }
-      setTimeout(tick, 1000 / 60);
+      if (!toc) {
+        setTimeout(tick, 1000 / 60);
+      } else {
+        ctx.fillStyle = "#FF0000";
+        ctx.fillRect(0, 0, c.width, c.height);
+      }
     })()
   </script>
 </body>
