@@ -19,12 +19,12 @@
     function cb() {
       if (bubble.settings.generalBehavior < 1) { bubble.settings.generalBehavior++; }
       else { bubble.settings.generalBehavior = -1; }
-      document.getElementById("behave").innerHTML = "Changer le comportement (Actuel: "+ bubble.settings.generalBehavior +")";
+      document.getElementById("behave").innerHTML = "Changer le comportement (Actuel: " + bubble.settings.generalBehavior + ")";
     }
     function cp() {
       if (bubble.settings.generalRangeEffect < 1) { bubble.settings.generalRangeEffect++; }
       else { bubble.settings.generalRangeEffect = -1; }
-      document.getElementById("range").innerHTML = "Changer l'effet de portée (Actuel: "+ bubble.settings.generalRangeEffect +")";
+      document.getElementById("range").innerHTML = "Changer l'effet de portée (Actuel: " + bubble.settings.generalRangeEffect + ")";
     }
     var c = document.getElementById("game")
     c.width = document.documentElement.clientWidth;
@@ -42,7 +42,7 @@
         ctx.fillStyle = "#000000";
         ctx.fillRect(bubble.data[i].x - 1, bubble.data[i].y - 1, 7, 7);
         var a = bubble.tick(i, cursor.x, cursor.y);
-        if (a.x>=c.width) { bubble.edit(i, 0, rand.int(1, c.height)) }
+        if (a.x >= c.width) { bubble.edit(i, 0, rand.int(1, c.height)) }
         ctx.fillStyle = "#FFFFFF";
         ctx.fillRect(bubble.data[i].x, bubble.data[i].y, 5, 5);
       }

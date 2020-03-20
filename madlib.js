@@ -50,7 +50,7 @@ var bubble = {
     data: [],
     settings: {
         rangeEffectArea: 100,
-        generalBehavior: 1,
+        generalBehavior: 0,
         generalRangeEffect: 0
     },
     create: function (x, y, speed = 5, rs = .1, angle = 0) {
