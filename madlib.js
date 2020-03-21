@@ -128,12 +128,12 @@ document.addEventListener("keyup", function (e) {
 });
 function keymotion() {
     var t = 0;
-    key.val.forEach(i => {
+    for (let t = 0; t < key.state.length; t++) {
+        eval("i = key.val."+key.state[t]);
         if (i == true) {
-            eval('eval("key.act." + key.val.'+key.state[t]+' + "()")');
+            eval('key.act. '+key.state[t]+ '()');
         }
-        t++;
-    });
+    }
     setTimeout(keymotion, 1000/60);
 }
 keymotion();
