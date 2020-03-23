@@ -17,14 +17,33 @@
 </head>
 
 <body style="background-color:black;color:white">
+  <div id="pausemenu"><button id="behave" onclick="cb()">A</button><button id="range" onclick="cp()">EEE</button><button id="range" onclick="cpls()">EEE</button></div>
   <canvas id="game"></canvas>
-  <button id="behave" onclick="cb()">Changer le comportement (Actuel: 1)</button>
-  <button id="range" onclick="cp()">Changer l'effet de portée (Actuel: 0)</button>
+  
+  
   <script src="madlib.js"></script>
   <script>
+    document.getElementById("behave").innerHTML = "Changer le comportement (Actuel: " + bubble.settings.generalBehavior + ")";
+    document.getElementById("range").innerHTML = "Changer l'effet de portée (Actuel: " + bubble.settings.generalRangeEffect + ")";
+    document.getElementById("pausemenu").style.display = "none";
     bubble.settings.generalRangeEffect = 1;
-    bubble.settings.generalBehavior = 0;
+    bubble.settings.generalBehavior = 0; 
     key.enable = true;
+    var paused = false;
+    function pause() {
+      if (paused) {
+        document.getElementById("pausemenu").style.display = "none";
+        tick();
+      } else {
+        document.getElementById("pausemenu").style.display = "block";
+      }
+      toogle(paused);
+    }
+    function cpls() {
+      key.enable = toogle(key.enable);
+      cursor.enable = toogle(key.enable);
+      if (key.enable) { keymotion(); }
+    }
     function cb() {
       if (bubble.settings.generalBehavior < 1) { bubble.settings.generalBehavior++; }
       else { bubble.settings.generalBehavior = -1; }
@@ -59,9 +78,10 @@
     for (let i = 0; i < 100; i++) {
       bubble.create(rand.int(1, 100), rand.int(1, c.height), rand.real(3.5, 6.5, 2));
     }
-    var timer = 0.5;
+    key.restrictions(0, c.width-7, 0, c.height-7);
+    var timer = 1;
     var toc = false;
-    (function tick() {
+    function tick() {
       for (let i = 0; i < bubble.data.length; i++) {
         ctx.fillStyle = "#000000";
         ctx.fillRect(Math.round(bubble.data[i].x), Math.round(bubble.data[i].y), 5, 5);
@@ -84,16 +104,29 @@
           }
         }
         if (a.x >= c.width) { bubble.edit(i, 0, rand.int(1, c.height), rand.real(3.5, 6.5, 2)) }
-        ctx.fillStyle = "#FFFFFF";
+        if (a.speed>=3.5 && a.speed<=6.5) {
+          var propSpd = getMix(3.5, 6.5, a.speed);
+          var hexspd = (Math.round(mix(200, 255, propSpd))).toString(16);
+          hexspd = hexspd.toUpperCase();
+          var color = "#" + hexspd + hexspd + hexspd;
+          ctx.fillStyle = color;
+        } else {
+          console.log("Error: out of range")
+          ctx.fillStyle = "#FFFFFF";
+        }
         ctx.fillRect(Math.round(bubble.data[i].x), Math.round(bubble.data[i].y), 5, 5);
       }
       if (!toc) {
-        setTimeout(tick, 1000 / 60);
+        if (!paused) {
+          load();
+          setTimeout(tick, 1000 / 60);
+        }
       } else {
         ctx.fillStyle = "#FF0000";
         ctx.fillRect(0, 0, c.width, c.height);
       }
-    })()
+    }
+    tick()
   </script>
 </body>
 
