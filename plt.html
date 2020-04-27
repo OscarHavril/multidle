@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=8.0, user-scalable=no">
+    <meta charset="UTF-8">
+    <script>
+    </script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+    </style>
+</head>
+
+<body>
+    <div style="display:none;">
+        <img id="source" src="tiles.png">
+    </div>
+    <canvas id="game"></canvas>
+    <div id="logs"></div>
+    <script src="madlib.js"></script>
+    <script>
+        function place(x, y, w, h, isTransparent = false, isVisible = false, isDeadly = false, color = '') {
+            if (color) ctx.fillStyle = color;
+            if (isVisible) ctx.fillRect(x, y, w, h);
+            var a = platformer.buildSquare(x, y, w, h, isTransparent, isVisible, isDeadly, color);
+            return a
+        }
+        rand.setup(1/rand.real(0, 100000000000));
+        var c = document.getElementById("game")
+        c.width = window.innerWidth;
+        c.height = window.innerHeight;
+        var ctx = c.getContext("2d");
+        ctx.fillStyle = "#000000";
+        var image = document.getElementById("source");
+        ctx.fillRect(0, 0, c.width, c.height);
+        ctx.imageSmoothingEnabled = false;
+        platformer.setDisplay(c, "black");
+        function render(a1 = 255, a2 = 255, a3 = 255, a4 = 255) {
+            var d = new Date();
+            var n = d.getTime();
+            var buff = ctx.createImageData(c.width, c.height);
+            for (let y = 0; y < c.height; y++) {
+                for (let x = 0; x < c.width; x++) {
+                    buff.data[4 * (c.width * y + x)] = rand.int(0,256);
+                    buff.data[4 * (c.width * y + x) + 1] = rand.int(0,256);
+                    buff.data[4 * (c.width * y + x) + 2] = rand.int(0,256);
+                    buff.data[4 * (c.width * y + x) + 3] = rand.int(0,256);
+                }
+            }
+            ctx.putImageData(buff, 0, 0);
+            d = new Date();
+            var a = d.getTime() - n;
+            console.log(a+'ms');
+        }
+    </script>
+</body>
+
+</html>

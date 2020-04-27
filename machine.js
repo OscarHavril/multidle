@@ -1,96 +1,108 @@
 x = 0;
 y = 0;
+key.enable
 
-//dictionnary for all keys and their values, and meaning
-var key = {
-    state: [],
-    value: [],
-    act: {}
-}
-//a 'k' before the id so Visual Studio stops screaming
-for (let i = 0; i < 100; i++) {
-    key.state[i] = false;
-    //FIX THIS THIS IS NO GOOD
-    //Fixed
-    //Oh thanks god I feel better
-    //You're welcome :)
-    //:)
-    //:)
-    //Okay, back to work :)
-}
-function setKeyVal(k, val) { key.value[k] = val; }
-function setKeyAct(k, act) { eval("key.act." + k + " = " + act + ";"); }
-//Key thing that add a meaning 
-//But no action tho
-//Yup, this comes later
-setKeyVal(90, "up")
-setKeyVal(38, "up")
-setKeyVal(83, "down")
-setKeyVal(40, "down")
-setKeyVal(81, "left")
-setKeyVal(37, "left")
-setKeyVal(68, "right")
-setKeyVal(39, "right")
-//Time for the actions!
-//Setup them first,
-//And then add them!
-
-
-
-
-//oh yeah, and the detector
-document.addEventListener("keydown", function (e) {
-    e = e || event; // to deal with IE
-    key.state[e.keyCode] = e.type == 'keydown';
-    /* insert conditional here */
-});
-document.addEventListener("keyup", function (e) {
-    e = e || event; // to deal with IE
-    key.state[e.keyCode] = e.type == 'keydown';
-    /* insert conditional here */
-});
-//Oops, almost forgot !
-setKeyAct("up", "function up() { ctx.translate(0, -1); y--; update() }")
-setKeyAct("down", "function down() { ctx.translate(0, 1); y++; update() }")
-setKeyAct("left", "function left() { ctx.translate(-1, 0); x--; update() }")
-setKeyAct("right", "function right() { ctx.translate(1, 0); x++; update() }")
-
+var updateLogs = [
+    {
+        v: 'indev 0.1',
+        log: [
+            '+ Added update logs.',
+            '+ Added a texture for the following block:',
+            ['empty.'],
+            ': Now using rand.lcg() in place of rand.noise() for worldgen.',
+            ': Now using rand.lcg() in place of rand.noise() for textures.',
+            ': Changed the textures of the following blocks:',
+            ['grass', ' sand', ' snow', ' ice', ' water', ' ocean.'],
+            ': Now using rand.lcg() in place of rand.noise() for the locatePattern() function.',
+            ': Changed color set for update logs.',
+            ': Support for the latest version of madlib.js.',
+            '- Removed transitions support for now.'
+        ]
+    },
+    {
+        v: 'indev 0.1.3',
+        log: [
+            '+ Engine now generation-ready.',
+            '+ Started biome support buildup.',
+            '; Various changements in preparation for "Indev 1.0".',
+            ': Built support for madlib.js v0.8.5.',
+        ]
+    },
+    {
+        v: 'indev 0.1.4',
+        log: [
+            ': Support for madlib.js v0.8.6.',
+            ': Twisted update logs array.',
+            '- Removed all log printing support.',
+            '- Removed all log loading support.'
+        ]
+    }
+];
+var biomes = {
+    name: 'biome',
+    type: 'generative',
+    priority: 1,
+    size: 64,
+    data: [
+        {
+            from: 'biome',
+            name: 'plains',
+            depth: [
+                [[[0.9, 'dirt'], [1, 'stone']], [[.25, 'water'], [0.3, 'sand'], [0.7, 'grass'], [1, 'stone']], [[.7, 'empty'], [1, 'stone']],],
+                [[[0.9, 'dirt'], [1, 'stone']], [[.25, 'water'], [0.3, 'sand'], [0.7, 'grass'], [1, 'stone']], [[.7, 'empty'], [1, 'stone']],],
+                [[[0.9, 'dirt'], [1, 'stone']], [[.25, 'water'], [0.3, 'sand'], [0.7, 'grass'], [1, 'stone']], [[.7, 'empty'], [1, 'stone']],],
+            ]
+        },
+        {
+            from: 'biome',
+            name: 'desert',
+            depth: [
+                [[[0.9, 'dirt'], [1, 'stone']], [[.15, 'water'], [0.3, 'sand'], [0.7, 'grass'], [1, 'stone']], [[.7, 'empty'], [1, 'stone']],],
+                [[[0.9, 'dirt'], [1, 'stone']], [[.25, 'water'], [0.3, 'sand'], [0.7, 'grass'], [1, 'stone']], [[.7, 'empty'], [1, 'stone']],],
+                [[[0.9, 'dirt'], [1, 'stone']], [[.25, 'water'], [0.3, 'sand'], [0.7, 'grass'], [1, 'stone']], [[.7, 'empty'], [1, 'stone']],]
+            ]
+        },
+    ]
+};
+var b2 = {
+    name: 'b2',
+    type: 'generative',
+    priority: 2,
+    size: 64,
+    data: [
+        {
+            from: 'b2',
+            name: 'plains',
+            depth: [
+                [[[0.9, 'dirt'], [1, 'stone']], [[.15, 'water'], [0.3, 'sand'], [0.7, 'grass'], [1, 'stone']], [[.7, 'empty'], [1, 'stone']],],
+                [[[0.9, 'dirt'], [1, 'stone']], [[.25, 'water'], [0.3, 'sand'], [0.7, 'grass'], [1, 'stone']], [[.7, 'empty'], [1, 'stone']],],
+                [[[0.9, 'dirt'], [1, 'stone']], [[.25, 'water'], [0.3, 'sand'], [0.7, 'grass'], [1, 'stone']], [[.7, 'empty'], [1, 'stone']],]
+            ]
+        },
+        {
+            from: 'biome',
+            name: 'desert',
+            depth: [
+                [[[0.9, 'dirt'], [1, 'stone']], [[.15, 'water'], [0.3, 'sand'], [0.7, 'grass'], [1, 'stone']], [[.7, 'empty'], [1, 'stone']],],
+                [[[0.9, 'dirt'], [1, 'stone']], [[.25, 'water'], [0.3, 'sand'], [0.7, 'grass'], [1, 'stone']], [[.7, 'empty'], [1, 'stone']],],
+                [[[0.9, 'dirt'], [1, 'stone']], [[.25, 'water'], [0.3, 'sand'], [0.7, 'grass'], [1, 'stone']], [[.7, 'empty'], [1, 'stone']],]
+            ]
+        },
+    ]
+};
+console.info('Gaem ready, version ' + updateLogs[updateLogs.length - 1].v);
+logs.load(updateLogs, updateLogs[updateLogs.length - 1].v);
+tiled.Setup(3, 3, 50, [biomes, b2], ['region', 'region']);
+//console.dir(tiled.BuildChunk([0, 0], { biome: 'none' }));
 var tickspeed = 0.1;
 var timer = 0;
-function deg(a) {
-    return a * (180 / Math.PI)
-};
-function rad(a) {
-    return a * (Math.PI / 180)
-}
-function angle(a, b) {
-    if (a == 0) {
-        return Math.PI / 2 * Math.floor(b / Math.abs(b))
-    } else if (a > 0) {
-        return Math.atan(b / a)
-    } else {
-        return Math.atan(b / a) + Math.PI
-    }
-}
-function update() {
-
-}
-var chunk = {
-    biome: "none",
-    gui: {},
-    blocks: []
-};
-for (let i = 0; i < 100; i++) {
-    chunk.blocks.push([0]);
-}
-var seed = Math.random();
-if (seed <= .25) { chunk.biome = "cold" }
-else if (seed <= .5) { chunk.biome = "desert" }
+rand.setup(1/rand.real(0, 100000000000));
+/*if (rand.seed <= .25) { chunk.biome = "cold" }
+else if (rand.seed <= .5) { chunk.biome = "desert" }
 else { chunk.biome = "plains" }
-noise.seed(seed);
 for (let px = 0; px < 100; px++) {
     for (let py = 0; py < 100; py++) {
-        var newBlock = Math.abs(noise.simplex2(.01 * px, .01 * py));
+        var newBlock = Math.abs(rand.marble(.01 * px, .01 * py));
         if (chunk.biome == "cold") {
             if (newBlock <= .25) { chunk.blocks[px][py] = "ice" }
             else { chunk.blocks[px][py] = "snow" }
@@ -106,37 +118,352 @@ for (let px = 0; px < 100; px++) {
             else { chunk.blocks[px][py] = "snow" }
         }
     }
+}*/
+var blocks = [
+    {
+        name: 'empty',
+        animated: false,
+        random: false,
+        texture: 'none',
+        playerLevel: true,
+        groundLevel: true,
+        solid: false,
+        hardness: 0,
+    },
+    {
+        name: 'grass',
+        animated: false,
+        random: false,
+        texture: [595724, [156, 204, 101, 255], [[124, 179, 66, 255], 0.0625]],
+        playerLevel: false,
+        groundLevel: true,
+        solid: true,
+        hardness: 5,
+    },
+    {
+        name: 'sand',
+        animated: false,
+        random: false,
+        texture: [87916, [255, 238, 88, 255], [[253, 216, 53, 255], 0.203125]],
+        playerLevel: false,
+        groundLevel: true,
+        solid: true,
+        hardness: 3,
+    },
+    {
+        name: 'snow',
+        animated: false,
+        random: false,
+        texture: [132, [238, 238, 238, 255], [[230, 230, 230, 255], 0.1]],
+        playerLevel: false,
+        groundLevel: true,
+        solid: true,
+        hardness: 3,
+    },
+    {
+        name: 'ice',
+        animated: false,
+        random: false,
+        texture: [132, [178, 235, 242, 255], [[128, 222, 234, 255], 0.04]],
+        playerLevel: false,
+        groundLevel: true,
+        solid: true,
+        hardness: 10,
+    },
+    {
+        name: 'stone',
+        animated: false,
+        random: false,
+        texture: [132, [189, 189, 189, 255], [[158, 158, 158, 255], 0.0003]],
+        playerLevel: true,
+        groundLevel: true,
+        solid: true,
+        hardness: 25,
+    },
+    {
+        name: 'water',
+        animated: false,
+        random: false,
+        texture: [1878396, [13, 72, 161, 255], [[21, 101, 192, 255], 0.109375]],
+        playerLevel: false,
+        groundLevel: true,
+        solid: false,
+        hardness: 500,
+    },
+    {
+        name: 'ocean',
+        animated: false,
+        random: false,
+        texture: [675544, [26, 35, 126, 255], [[40, 52, 147, 255], 0.1]],
+        playerLevel: false,
+        groundLevel: true,
+        solid: false,
+        hardness: 500,
+    },
+];
+var trans = [
+    {
+        from: 'sand',
+        to: 'grass',
+        tile: [0, 0],
+    },
+    {
+        from: 'sand',
+        to: 'grass',
+        orientation: 'top',
+        tile: [1, 0],
+    },
+    {
+        from: 'sand',
+        to: 'grass',
+        orientation: 'top-right',
+        tile: [2, 0],
+    },
+    {
+        from: 'sand',
+        to: 'grass',
+        orientation: 'left',
+        tile: [0, 1],
+    },
+    {
+        from: 'sand',
+        to: 'grass',
+        orientation: 'right',
+        tile: [2, 1],
+    },
+    {
+        from: 'sand',
+        to: 'grass',
+        orientation: 'bottom-left',
+        tile: [0, 2],
+    },
+    {
+        from: 'sand',
+        to: 'grass',
+        orientation: 'bottom',
+        tile: [1, 2],
+    },
+    {
+        from: 'sand',
+        to: 'grass',
+        orientation: 'bottom-right',
+        tile: [2, 2],
+    },
+];
+tiled.blocks = blocks;
+for (let i = 0; i < blocks.length; i++) {
+    tile.Block(blocks[i]);
 }
-var textures = {
-    sand: { x: 192, y: 192 },
-    grass: { x: 32, y: 32 },
-    stone: { x: 192, y: 224 },
-    snow: { x: 128, y: 32 },
-    water: { x: 224, y: 32 },
-    ice: { x: 224, y: 128 }
+rand.gen2D(50, 50);
+var max = 0;
+var min = 1;
+for (let y = 0; y < 50; y++) {
+    var r = [];
+    for (let x = 0; x < 50; x++) {
+        if (max < rand.map.smoothed[y][x]) { max = rand.map.elem[y][x]; }
+        if (min > rand.map.smoothed[y][x]) { min = rand.map.elem[y][x]; }
+        var a = Math.floor(mix(0, blocks.length, rand.map.smoothed[y][x]));
+        r.push(a);
+    }
+    coords.medium.push(r);
 }
-
+console.log(min, max);
+function spdTest(c1, c2) {
+    var x = rand.xlc;
+    var d = new Date();
+    var n = d.getTime();
+    var v = rand.xlcg(c1);
+    d = new Date();
+    var a = d.getTime() - n;
+    rand.xlc = x;
+    d = new Date();
+    var n2 = d.getTime();
+    v = rand.xlcg(c2);
+    d = new Date();
+    var a2 = d.getTime() - n2;
+    rand.xlc = x;
+    console.log(a, a2, a2 / a);
+}
 var c = document.getElementById("game")
-c.width = document.documentElement.clientWidth;
-c.height = document.documentElement.clientHeight;
+c.width = 50 * 32;
+c.height = 50 * 32;
 var ctx = c.getContext("2d");
 ctx.fillStyle = "#000000";
 var image = document.getElementById("source");
-ctx.fillRect(0, 0, c.width, c.height);
-console.log(c.width, c.height);
+ctx.fillRect(0, 0, 50 * 32, 50 * 32);
+ctx.imageSmoothingEnabled = false;
+ctx.scale(4, 4);
 var timer = 0;
-(function tick() {
-    timer++;
-    for (i = 0; i < 100; i++) {
-        if (key.state[i] == true) {
-            eval('key.act.' + key.value[i] + "()");
-            //God I LOVEHATE this
+for (let y = 0; y < 50; y++) {
+    for (let x = 0; x < 50; x++) {
+        if (!tile.blocks[coords.medium[y][x]].random) {
+            var t = tile.blocks[coords.medium[y][x]].texture;
+            if (typeof (t[1]) == 'object') {
+                var t = tile.blocks[coords.medium[y][x]].texture;
+                var img = ctx.createImageData(32, 32);
+                var ttr = [];
+                var seed = rand.seed;
+                rand.setup(1 / t[0]);
+                for (let my = 0; my < 8; my++) {
+                    for (let mx = 0; mx < 8; mx++) {
+                        var clr = t[1];
+                        var a = rand.lcg();
+                        var sum = a;
+                        var r = [];
+                        for (let i = 2; i < t.length; i++) {
+                            if (sum >= 1 - t[i][1]) {
+                                clr = t[i][0];
+                                i = t.length;
+                            } else {
+                                sum += a;
+                            }
+                        }
+                        //scale up
+                        for (let dy = 0; dy < 4; dy++) {
+                            for (let dx = 0; dx < 4; dx++) {
+                                img.data[16 * mx + 512 * my + 4 * dx + 128 * dy] = clr[0];
+                                img.data[16 * mx + 512 * my + 4 * dx + 128 * dy + 1] = clr[1];
+                                img.data[16 * mx + 512 * my + 4 * dx + 128 * dy + 2] = clr[2];
+                                img.data[16 * mx + 512 * my + 4 * dx + 128 * dy + 3] = clr[3];
+                            }
+                        }
+                        r.push(clr);
+                    }
+                    ttr.push(r);
+                }
+                ctx.putImageData(img, 32 * x, 32 * y);
+                rand.setup(seed);
+            } else {
+                var t = texture.pos(t[0], t[1]);
+                ctx.drawImage(image, t[0], t[1], texture.size, texture.size, 8 * x, 8 * y, 8, 8);
+            }
+
+        } else {
+            var t = tile.blocks[coords.medium[y][x]].texture;
+            var img = ctx.createImageData(32, 32);
+            var ttr = [];
+            for (let my = 0; my < 8; my++) {
+                for (let mx = 0; mx < 8; mx++) {
+                    var clr = t[0];
+                    var a = rand.lcg();
+                    var sum = a;
+                    var r = [];
+                    for (let i = 1; i < t.length; i++) {
+                        if (sum >= 1 - t[i][1]) {
+                            clr = t[i][0];
+                            i = t.length;
+                        } else {
+                            sum += a;
+                        }
+                    }
+                    //scale up
+                    for (let dy = 0; dy < 4; dy++) {
+                        for (let dx = 0; dx < 4; dx++) {
+                            img.data[16 * mx + 512 * my + 4 * dx + 128 * dy] = clr[0];
+                            img.data[16 * mx + 512 * my + 4 * dx + 128 * dy + 1] = clr[1];
+                            img.data[16 * mx + 512 * my + 4 * dx + 128 * dy + 2] = clr[2];
+                            img.data[16 * mx + 512 * my + 4 * dx + 128 * dy + 3] = clr[3];
+                        }
+                    }
+                    r.push(clr);
+                }
+                ttr.push(r);
+            }
+            ctx.putImageData(img, 32 * x, 32 * y);
         }
     }
+}
+function locateBlock(type, x0, y0) {
+    var t = 0;
+    for (let i = 0; i < blocks.length; i++) {
+        if (type == blocks[i].name) {
+            t = i;
+            i = blocks.length;
+        }
+    }
+    for (let y = 0; y < 50; y++) {
+        for (let x = 0; x < 50; x++) {
+            if (t == coords.medium[y][x]) {
+                return [y, x]
+            }
+        }
+    }
+    return -1
+}
+function locatePattern(pattern, item, range) {
+    var z = 0;
+    for (let i = 0; i < blocks.length; i++) {
+        if (item == blocks[i].name) {
+            z = i;
+            i = blocks.length;
+        }
+    }
+    var t = tile.blocks[z].texture;
+    if (typeof (t[1]) == 'object') {
+        for (let a = 0; a < range; a++) {
+            var sd = rand.seed;
+            rand.setup(1 / a);
+            var cut = 0;
+            for (let my = 0; my < pattern.length; my++) {
+                for (let mx = 0; mx < pattern.length; mx++) {
+                    var clr = 0;
+                    var s = rand.lcg();
+                    var sum = s;
+                    for (let i = 2; i < t.length; i++) {
+                        if (sum >= 1 - t[i][1]) {
+                            clr = i - 1;
+                            i = t.length;
+                        } else {
+                            sum += s;
+                        }
+                    }
+                    if (clr != pattern[my][mx]) {
+                        mx = range;
+                        my = range;
+                        cut = 1;
+                    }
+                }
+            }
+            rand.setup(sd);
+            if (cut == 0) return a;
+        }
+    } else {
+        for (let a = 0; a < range; a++) {
+            var sd = rand.seed;
+            rand.setup(a);
+            var cut = 0;
+            for (let my = 0; my < pattern.length; my++) {
+                for (let mx = 0; mx < pattern.length; mx++) {
+                    var clr = 0;
+                    var s = rand.lcg();
+                    var sum = s;
+                    for (let i = 1; i < t.length; i++) {
+                        if (sum >= 1 - t[i][1]) {
+                            clr = i;
+                            i = t.length;
+                        } else {
+                            sum += s;
+                        }
+                    }
+                    if (clr != pattern[my][mx]) {
+                        mx = range;
+                        my = range;
+                        cut = 1;
+                    }
+                }
+            }
+            rand.setup(sd);
+            if (cut == 0) return a;
+        }
+    }
+    return 'Not found'
+}
+/*(function tick() {
+    timer++;
     //check updates before change
     if (updated) {
-        for (let px = Math.round(x/32); px < Math.round((c.width+x)/32); px++) {
-            for (let py = Math.round(y/32); py < Math.round((c.height+y)/32); py++) {
+        for (let px = Math.round(x / 32); px < Math.round((c.width + x) / 32); px++) {
+            for (let py = Math.round(y / 32); py < Math.round((c.height + y) / 32); py++) {
                 iT = chunk.blocks[px][py];
                 ctx.drawImage(image, textures[iT].x, textures[iT].y, 32, 32, 32 * px, 32 * py, 32, 32);
             }
@@ -146,4 +473,4 @@ var timer = 0;
     }
     if (timer / 60 == Math.floor(timer / 60)) { console.count("Tick") }
     setTimeout(tick, 1000 / 60);
-})()
+})()*/
