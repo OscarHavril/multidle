@@ -78,6 +78,14 @@ var mdlUpdateLogs = [
             ': Fixed a bug where javascript would do a mess with this. Or this.this. I honestly don\'t know.',
         ]
     },
+    {
+        v: 'beta 0.10.3',
+        log: [
+            '!+ New sentence analysis system:',
+            '? You can learn about persona, item (though not working yet), type and action.',
+            ': Yes.'
+        ]
+    },
 ];
 var logs = {
     colorSet: {
@@ -176,11 +184,79 @@ getMix = (a, b, c) => (c - a) / (b - a);
 norm = (x, y) => Math.sqrt(x ** 2 + y ** 2);
 knuth = (a, b, c) => b < 2 || c < 1 ? a ** c : knuth(a, b - 1, knuth(a, b, c - 1));
 sortgrow = (array) => array.sort(function (a, b) { return a - b; });
-delta = (a, b, c) => b ** 2 - 4 * a * c;
+delta = (a, b = 0, c = 0) => b ** 2 - 4 * a * c;
 isMultipleOf = (i, a) => i / a == Math.abs(i / a);
 Array.prototype.max = function () { return Math.max.apply(null, this); }
 Array.prototype.min = function () { return Math.min.apply(null, this); }
 Array.prototype.copy = function () { return JSON.parse(JSON.stringify(this)); }
+function hyperBilinInterp(array, power) {
+    power = 1 - 0.5 * power;
+    var result = [];
+    for (let gy = 1; gy < array.length - 1; gy++) {
+        var res = [];
+        for (let gx = 1; gx < array[gy].length - 1; gx++) {
+            var arr = [];
+            for (let y = 0; y < array[gy][gx].length; y++) {
+                var a = [];
+                for (let x = 0; x < array[gy][gx][y].length; x++) {
+                    //derivative of perlin ?
+                    //AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+                    //dist to border ?
+
+
+                    // cx/cy distance to center
+                    var cx, cy;
+                    if (x <= array[gy][gx][y].length / 2) cx = getMix(array[gy][gx][y].length / 2, 0, x); 
+                    else cx = getMix(array[gy][gx][y].length / 2, array[gy][gx][y].length, x);
+                    if (y <= array[gy][gx].length / 2) cy = getMix(array[gy][gx].length / 2, 0, y); 
+                    else cy = getMix(array[gy][gx].length / 2, array[gy][gx].length, y); 
+                    // dx/dy distance to nearest border (I hope)
+                    var dx = getMix(array[gy][gx - 1][y].length, array[gy][gx][y].length + array[gy][gx - 1][y].length, x + array[gy][gx - 1][y].length);
+                    var dy = getMix(array[gy][gx - 1].length, array[gy][gx].length + array[gy][gx - 1].length, y + array[gy][gx - 1].length);
+                    // set nearest border
+                    var sx = 1, sy = 1;
+                    if (dx > 0.5) dx = 1 - dx, sx = -sx;
+                    if (dy > 0.5) dy = 1 - dy, sy = -sy;
+                    dx = 2*dx, dy = 2*dy;
+                    var cxy = norm(cx, cy);
+                    var dxy = norm(dx, dy);
+                    var adxy = [1 - dx, 1 - dy];
+                    axy = adxy.max();
+                    cxy = (cxy+(axy))/2;
+                    var r = Math.abs(x - y);
+                    var ax = 0, ay = 0, rx = 0, ry = 0;
+                    // set rx ry ax ay; a = wall; r = diff.
+                    if (cx >= cy) ax = -sx, ry = Math.floor(mix(0, array[gy + ax][gx + ax][y].length / 2, dy - sy*(cy/cx)*dx)); // W/E WALL
+                    if (cx <= cy) ay = -sy, rx = Math.floor(mix(0, array[gy + ay][gx + ax].length / 2, dx - sx*(cx/cy)*dy)); // N/S WALL
+                    if (ax < 0) rx = array[gy][gx][y].length - 1;
+                    if (ay < 0) ry = array[gy][gx].length - 1;
+                    if (x == array[gy][gx][y].length / 2) ry = y;
+                    if (y == array[gy][gx].length / 2) rx = x;
+                    //console.log(x, y, dx, dy, cx, cy, rx, ry, ax, ay)
+                    //if (sx > 0 && dx <= dy) ax = -1, rx = array[gy][gx][y].length - 1, ry = y; //WEST
+                    //else if (sx < 0 && dx <= dy) ax = 1, ry = y; //EAST
+                    //if (sy > 0 && dx >= dy) ay = -1, ry = array[gy][gx].length - 1, rx = x; //NORTH
+                    //else if (sy < 0 && dx >= dy) ay = 1, rx = x; //SOUTH
+                    var value = mix(array[gy][gx][y][x], array[gy + ay][gx + ax][ry][rx], 1);
+                    a.push(value);
+                }
+                arr.push(a);
+            }
+            res.push(arr);
+        }
+        result.push(res);
+    }
+    return result
+}
+function toTimeFormat(a) {
+    var r = "";
+    var powers = [365.25 * 24 * 60 * 60000, 24 * 60 * 60000, 60 * 60000, 60000, 1000, 1]
+    var suffix = ['years', 'days', 'hours', 'minutes', 'seconds', 'miliseconds']
+    for (let i = 0; i < powers.length; i++) {
+        if (Math.floor(a / powers[i])) r += Math.floor(a / powers[i]) + " " + suffix[i] + ", ", a -= Math.floor(a / powers[i]) * powers[i];
+    }
+    return r
+}
 function getAllProperties(o) {
     var names = Object.getOwnPropertyNames(o);
     var prop = [];
@@ -275,18 +351,20 @@ var stats = {
 };
 var rand = {
     seed: 0,
-    setup: function (x) {
-        this.seed = x;
-        this.mod = 1 / Math.sqrt(x);
-        this.mult = Math.sqrt(this.mod * goldenRatio);
-        this.step = 1 / (this.mult ** 2);
-        this.xlc = Math.sqrt(this.mult + this.mod + this.step);
+    setup: function (x = rand.seed) {
+        rand.seed = x;
+        rand.mod = 1 / Math.sqrt(x);
+        rand.mult = Math.sqrt(rand.mod * goldenRatio);
+        rand.step = 1 / (rand.mult ** 2);
+        rand.xlc = Math.sqrt(rand.mult + rand.mod + rand.step);
     },
+    permutation: [151,160,137,91,90,15,131,13,201,95,96,53,194,233,7,225,140,36,103,30,69,142,8,99,37,240,21,10,23,190, 6,148,247,120,234,75,0,26,197,62,94,252,219,203,117,35,11,32,57,177,33,88,237,149,56,87,174,20,125,136,171,168, 68,175,74,165,71,134,139,48,27,166,77,146,158,231,83,111,229,122,60,211,133,230,220,105,92,41,55,46,245,40,244,102,143,54, 65,25,63,161, 1,216,80,73,209,76,132,187,208, 89,18,169,200,196,135,130,116,188,159,86,164,100,109,198,173,186, 3,64,52,217,226,250,124,123,5,202,38,147,118,126,255,82,85,212,207,206,59,227,47,16,58,17,182,189,28,42,223,183,170,213,119,248,152, 2,44,154,163, 70,221,153,101,155,167, 43,172,9,129,22,39,253, 19,98,108,110,79,113,224,232,178,185, 112,104,218,246,97,228,251,34,242,193,238,210,144,12,191,179,162,241, 81,51,145,235,249,14,239,107,49,192,214, 31,181,199,106,157,184, 84,204,176,115,121,50,45,127, 4,150,254,138,236,205,93,222,114,67,29,24,72,243,141,128,195,78,66,215,61,156,180],
     step: .05,
     len: 20,
     xlc: 0,
     mult: 1.0932,
     mod: 1.1,
+    grdMap: [],
     sourceLcg: [],
     map: {
         x: 0,
@@ -294,11 +372,78 @@ var rand = {
         elem: [],
         smoothed: []
     },
+    grdRand: function (ax, ay) {
+        //Loads gradient vectors for a given table size
+        var arr = [];
+        for (y = 0; y < ay+1; y++) {
+            var a = [];
+            for (x = 0; x < ax+1; x++) {
+                //r = [rand.int(-1,1), rand.int(-1,1)];
+                r = [ 2 * rand.lcg() - 1, 2 * rand.lcg() - 1];
+                a.push(r);
+            }
+            arr.push(a);
+        }
+        rand.grdMap = arr;
+        return arr
+    },
+    polygen2D: function (ax, ay, sx, sy) {
+        //Okay i'll try full perlin
+        /*var p = [];
+        for(x=0;x<512;x++) {
+            p[x] = rand.permutation[x%256];
+        }*/
+
+        //maybe not
+
+        //retrieve gradient vectors 
+        function fade(t) {
+            //stolen from perlin
+            return t * t * t * (t * (t * 6 - 15) + 10)
+        }
+        var arr = [];
+        var v = [];
+        v[0] = rand.grdMap[ay][ax]; v[1] = rand.grdMap[ay][ax + 1];
+        v[2] = rand.grdMap[ay + 1][ax]; v[3] = rand.grdMap[ay + 1][ax + 1]; 
+        //PLEASE use contants for sx and sy.
+        for (y = 0; y < sy; y++) {
+            var a = [];
+            for (x = 0; x < sx; x++) {
+                //Distance of point to each border
+                var dx = getMix(0,sx,x);
+                var dy = getMix(0,sy,y);
+                var dxy = [];
+                dxy[0] = [dy, dx]; dxy[1] = [dy, 1 - dx];
+                dxy[2] = [1 - dy, dx]; dxy[3] = [1 - dy, 1 - dx];
+                //uuuuh... "dot product" ?
+                //////AAAH FUCK I NEED THE COORDINATES OR WHAT FUCK
+                var res = [];
+                for (let i = 0; i < dxy.length; i++) {
+                    res[i] = v[i][0] * dxy[i][0] + v[i][1] * dxy[i][1];
+                }
+                dx = fade(dx); dy = fade(dy);
+                var x1 = mix(res[0], res[1], dx);
+                var x2 = mix(res[2], res[3], dx);
+                var r = mix(x1, x2, dy);
+                a.push(r);
+            }
+            arr.push(a);
+        }
+        return arr
+    },
     preGenLCG: function (n) {
         for (let i = 0; i < n; i++) {
             rand.xlc = (rand.mult * rand.xlc + rand.step) % rand.mod;
             rand.sourceLcg[n] = rand.xlc;
         }
+    },
+    rlcg: function (n) {
+        //If this is the only usage you are making of this random ranged function, you should not be using that. 
+        //It is in that case stongly advised to use the (slower) rand.noise, or pregenerate a table (good for small values).
+        for (let i = 0; i < n; i++) rand.xlc = (rand.mult * rand.xlc + rand.step) % rand.mod;
+        var xlc = rand.xlc;
+        rand.setup();
+        return xlc / rand.mod
     },
     lcg: function () {
         rand.xlc = (rand.mult * rand.xlc + rand.step) % rand.mod;
@@ -309,7 +454,7 @@ var rand = {
         return rand.xlc / rand.mod
     },
     noise: function (x = Math.random) {
-        //Note : deprecated, use rand.lcg() instead. 
+        //Note : deprecated, use rand.lcg() for classic uses instead. 
         var t = 0;
         for (let i = -Math.ceil(rand.len / 2); i < Math.floor(rand.len / 2); i++) t += (1 / (i + 1 + Math.ceil(rand.len / 2))) ** (1 / 3) * Math.sin(i ** 2 * x * rand.step + rand.seed * (i + 1));
         return .5 * Math.cos(64 * pi * t) + .5
@@ -318,7 +463,7 @@ var rand = {
     real: function (a, b, acc = -1, x = Math.random()) {
         return (acc >= 0 ? Math.round((a + Math.random() * (b - a)) * (10 ** acc)) / (10 ** acc) : a + Math.random() * (b - a))
     },
-    gen2D: function (a, b, turb = true, lcg = true) {
+    gen2D: function (a, b, turb = true, trubLvl = 64, lcg = true) {
         rand.map.x = a; rand.map.y = b; rand.map.smoothed = []; rand.map.elem = [];
         if (lcg) {
             for (let y = 0; y < b; y++) {
@@ -329,7 +474,7 @@ var rand = {
             if (turb) {
                 for (let y = 0; y < b; y++) {
                     var r = [];
-                    for (let x = 0; x < a; x++) r.push(rand.turbulence(x, y, 64));
+                    for (let x = 0; x < a; x++) r.push(rand.turbulence(x, y, trubLvl));
                     rand.map.smoothed.push(r);
                 }
                 return rand.map.smoothed
@@ -350,7 +495,7 @@ var rand = {
             if (turb) {
                 for (let y = 0; y < b; y++) {
                     var r = [];
-                    for (let x = 0; x < a; x++) r.push(rand.turbulence(x, y, 64));
+                    for (let x = 0; x < a; x++) r.push(rand.turbulence(x, y, trubLvl));
                     rand.map.smoothed.push(r);
                 }
                 return rand.map.smoothed
@@ -663,7 +808,6 @@ var rand = {
             }
         }
     }
-
 };
 var sound = {
     //No idea how this even works, DO NOT TOUCH.
@@ -721,6 +865,144 @@ var sound = {
     }
 };
 window.addEventListener('load', sound.init, false);
+var linkedTiles = {
+    map: [],
+    links: [],
+
+};
+var sentence = {
+    current: {},
+    data: {
+        auctions: [[['be', 'am', 'are', 'is', 'are', 'are', 'are'], 'assert'], ['ran', 'ran']],
+        items: [{ name: 'gender', poss: ['boy', 'girl', 'nonbinary'] }, { name: 'city', poss: ['paris', 'london'], prot: { size: ['number', 'km'], habitants: ['number'] } }],
+        personas: [['i', 'the user'], ['you', 'the system']],
+        types: [['?', 'interrogation'], ['.', 'affirmation'], ['!', 'exclamation']],
+    },
+    isVowel: function (t) {
+        var v = ['a', 'e', 'i', 'o', 'u'];
+        for (let i = 0; i < v.length; i++) {
+            if (t.substring(0, 1).toLowerCase() == v[i]) return true
+        } return false
+    },
+    findNum: function (sc, d = 0) {
+        var n = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+        var t = Infinity;
+        for (let i = 0; i < n.length; i++) {
+            a = sc.indexOf(n[i], d);
+            if (a != -1 && t > a) t = a;
+        }
+        var e = true;
+        var z = t;
+        while (z < sc.length && e) {
+            e = false;
+            z++;
+            for (let i = 0; i < n.length; i++) {
+                if (sc[z] == n[i]) e = true;
+            }
+        }
+        return [t, z, sc.substring(t, z)]
+    },
+    isWord: function (w, sc, d = 0) {
+        var sc = sc.toLowerCase();
+        var l = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'];
+        var a = 0;
+        var b = 0;
+        while (a != -1) {
+            a = b;
+            a = sc.indexOf(w, a + d);
+            b = a + w.length;
+            var r = true;
+            if (b < sc.length - 1) {
+                for (let i = 0; i < l.length; i++) {
+                    if (sc[b + 2] == l[i]) r = false, i = Infinity;
+                }
+            }
+            if (a > 0) {
+                for (let i = 0; i < l.length; i++) {
+                    if (sc[a - 1] == l[i]) r = false, i = Infinity;
+                }
+            }
+            if (r) return r;
+        }
+        return false
+    },
+    getAuction: function (sc) {
+        var j, a;
+        sc = sc.toLowerCase();
+        for (let i = 0; i < sentence.data.auctions.length; i++) {
+            if (typeof (sentence.data.auctions[i][0]) == "object") {
+                var arr = sentence.data.auctions[i][0];
+                for (let z = 0; z < arr.length; z++) {
+                    if (sentence.isWord(arr[z], sc)) j = i, i = Infinity, z = Infinity;
+                }
+            } else {
+                if (sentence.isWord(sentence.data.auctions[i][0], sc)) j = i, i = Infinity;
+            }
+        }
+        sentence.current.act = sentence.data.auctions[j];
+    },
+    getPersona: function (sc) {
+        var j, a;
+        sc = sc.toLowerCase();
+        for (let i = 0; i < sentence.data.personas.length; i++) {
+            if (sentence.isWord(sentence.data.personas[i][0], sc)) j = i, i = Infinity;
+        }
+        sentence.current.pers = sentence.data.personas[j];
+    },
+    getSentenceType: function (sc) {
+        var j, a;
+        sc = sc.toLowerCase();
+        for (let i = 0; i < sentence.data.types.length; i++) {
+            a = sc.indexOf(sentence.data.types[i][0]);
+            if (a != -1) j = i, i = Infinity;
+        }
+        sentence.current.type = sentence.data.types[j];
+    },
+    getItem: function (sc) {
+        var j, a;
+        sc = sc.toLowerCase();
+        for (let i = 0; i < sentence.data.items.length; i++) {
+            if (typeof (sentence.data.items[i].poss) == "object") {
+                var arr = sentence.data.items[i];
+                for (let z = 0; z < arr.poss.length; z++) {
+                    if (sentence.isWord(arr.poss[z], sc)) j = i, i = Infinity, z = Infinity;
+                }
+                if (sentence.data.items[j].prot) {
+                    var r = Object.getOwnPropertyNames(sentence.data.items[j].prot);
+                    for (let i = 0; i < r.length; i++) {
+                        var p = 0; var e = true;
+                        while (p < sc.length && e) {
+                            if (sentence.data.items[j].prot[i][0] == 'number') {
+                                var q = sentence.findNum(sc, p);
+                                if (sc.indexOf(sc, q[1]) == q[1]);
+                                else p = q[1];
+                            }
+                        }
+                    }
+                }
+            } else {
+                if (sentence.isWord(sentence.data.items[i][0], sc)) j = i, i = Infinity;
+            }
+        }
+        sentence.current.item = sentence.data.items[j];
+    },
+    Analyse: function (sc) {
+        sentence.getPersona(sc);
+        sentence.getAuction(sc);
+        sentence.getSentenceType(sc);
+        sentence.getItem(sc);
+        return 'Sentence analysis done. This sentence is a' + (sentence.current.type ? (sentence.isVowel(sentence.current.type[1]) ? 'n ' : '') + sentence.current.type[1] : 'n ' + 'undefined (You should consider defining it)')
+            + ', speaking about ' + (sentence.current.pers ? sentence.current.pers[1] : 'unkown (You should consider defining it)')
+            + ', it is a' + (sentence.current.act ? (sentence.isVowel(sentence.current.act[1]) ? 'n ' : '') + sentence.current.act[1] : 'n ' + 'undefined action (You should consider defining it)')
+            + ' where the user speaks about ' + (sentence.current.item ? sentence.current.item.name : 'something unkown (You should consider defining it)') + ', '
+    },
+    answer: function (sc) {
+        sentence.Analyse(sc);
+        if (sentence.current.type[0] == '?') {
+
+        }
+    },
+};
 var bubble = {
     data: [],
     settings: {
@@ -786,32 +1068,76 @@ var bubble = {
 var platformer = {
     map: [],
     display: undefined,
-    background: undefined,
+    bgc: undefined,
     player: {},
-    respawn: function (x, y, w, h, isTransparent = false, isVisible = false, color = '', index = -1) {
-        platformer.player = { pos: [x, y], size: [w, h], isTransparent: isTransparent, isVisible: isVisible, color: color, index: index }
+    settings: { g: -9.8 },
+    respawn: function (x, y, w, h, jumpHeight, accTime, decelTime, maxSpd, isTransparent = false, isVisible = false, color = '', index = -1) {
+        platformer.player = { pos: [x, y], size: [w, h], isTransparent: isTransparent, isVisible: isVisible, color: color, index: index, speed: [0, 0], jumpHeight: jumpHeight, spdTime: [accTime, decelTime], maxMotionSpd: maxSpd }
+    },
+    plJump: function () {
+        if (!platformer.isPlayerFalling()) {
+            platformer.player.speed[1] = platformer.player.jumpHeight;
+            return platformer.player.jumpHeight;
+        } return 0
+    },
+    plDisp: function (show) {
+        if (show) platformer.display.getContext("2d").fillStyle = platformer.player.color;
+        else platformer.display.getContext("2d").fillStyle = platformer.bgc;
+        platformer.display.getContext("2d").fillRect(platformer.player.pos[0], platformer.player.pos[1], platformer.player.size[0], platformer.player.size[1]);
+    },
+    plMove: function (dir) {
+        platformer.plDisp(false);
+        platformer.player.speed[0] = platformer.player.maxMotionSpd * (dir == 'right' ? 1 : -1);
+        platformer.player.pos[0] = Math.floor(platformer.player.pos[0] + platformer.player.speed[0]);
+        for (let i = 0; i < platformer.map.length; i++) {
+            var c = platformer.solve(platformer.collison('player', i), 'player', i);
+        }
+        platformer.plDisp(true);
+        return platformer.player.pos[0];
+    },
+    isPlayerFalling: function () {
+        platformer.player.pos[1] -= 1
+        var f = 0;
+        for (let i = 0; i < platformer.map.length; i++) {
+            var a = platformer.collison('player', i);
+            if (a[1] < 0 && a[3] < 0) f++;
+        }
+        return !(f)
+    },
+    plFall: function (t) {
+        var r = platformer.isPlayerFalling();
+        if (r) {
+            platformer.plDisp(false);
+            platformer.player.speed[1] += platformer.settings.g;
+            platformer.player.pos[1] = Math.floor(platformer.player.pos[1] + platformer.player.speed[1]);
+            for (let i = 0; i < platformer.map.length; i++) platformer.solve(platformer.collison('player', i), 'player', i);
+            platformer.plDisp(true);
+            return platformer.player.pos[1]
+        } return platformer.player.pos[1]
     },
     getLowestIndex: function (start = -1) {
         var arr = [];
-        for (let i = 0; i < this.map.length; i++) {
-            arr[i] = this.map[i].index;
+        for (let i = 0; i < platformer.map.length; i++) {
+            arr[i] = platformer.map[i].index;
         }
         for (let i = 0; i < arr.length; i++) {
             if (arr[i] < start) arr.splice(i, 1);
         }
-        if (this.player.index >= start && this.player.index < arr.min()) return this.player.index;
+        if (platformer.player.index >= start && platformer.player.index < arr.min()) return platformer.player.index;
         else return arr.min;
     },
-    display: function () {
+    displayAll: function () {
         platformer.display.getContext("2d").fillStyle = platformer.bgc;
         platformer.display.getContext("2d").fillRect(0, 0, platformer.display.width, platformer.display.height);
-        for (let i = -1; i < map.length; i++) {
-            this.getLowestIndex(i);
+        platformer.display.getContext("2d").fillStyle = platformer.player.color;
+        platformer.display.getContext("2d").fillRect(platformer.player.pos[0], platformer.player.pos[1], platformer.player.size[0], platformer.player.size[1]);
+        for (let i = 0; i < platformer.map.length; i++) {
+            platformer.getLowestIndex(i);
             if (platformer.map[i].color) platformer.display.getContext("2d").fillStyle = platformer.map[i].color;
-            if (this.map[i].type = 'square') {
-                if (platformer.map[i].isVisible) platformer.display.getContext("2d").fillRect(platformer.map[i].pos[0], platformer.map[i].pos[1], platformer.map[i].size[0], platformer.map[1].size[1]);
-            } else if (this.map[i].type = 'circle') {
-                if (platformer.map[i].isVisible) platformer.display.getContext("2d").fillRect(platformer.map[i].pos[0], platformer.map[i].pos[1], platformer.map[i1].radius, 0, 2 * pi);
+            if (platformer.map[i].type = 'square') {
+                if (platformer.map[i].isVisible) platformer.display.getContext("2d").fillRect(platformer.map[i].pos[0], platformer.map[i].pos[1], platformer.map[i].size[0], platformer.map[i].size[1]);
+            } else if (platformer.map[i].type = 'circle') {
+                if (platformer.map[i].isVisible) platformer.display.getContext("2d").fillRect(platformer.map[i].pos[0], platformer.map[i].pos[1], platformer.map[i].radius, 0, 2 * pi);
             }
         }
     },
@@ -821,54 +1147,42 @@ var platformer = {
         platformer.displayMode = displayMode;
     },
     collison: function (i1, i2) {
-        if (i1 != 'player') {
-            if (!platformer.map[i1].isTransparent && !platformer.map[i2].isTransparent) {
-                var x1 = platformer.map[i1].pos[0] - (platformer.map[i2].pos[0] + platformer.map[i2].size[0]);
-                var x2 = platformer.map[i1].pos[0] + platformer.map[i1].size[0] - (platformer.map[i2].pos[0]);
-                var y1 = platformer.map[i1].pos[1] - (platformer.map[i2].pos[1] + platformer.map[i2].size[1]);
-                var y2 = platformer.map[i1].pos[1] + platformer.map[i1].size[1] - (platformer.map[i2].pos[1]);
-                return [x1, y1, x2, y2]
-            } else {
-
-            }
-        } else {
-            if (!platformer.map[i1].isTransparent && !platformer.map[i2].isTransparent) {
-                var x1 = platformer.map[i1].pos[0] - (platformer.map[i2].pos[0] + platformer.map[i2].size[0]);
-                var x2 = platformer.map[i1].pos[0] + platformer.map[i1].size[0] - (platformer.map[i2].pos[0]);
-                var y1 = platformer.map[i1].pos[1] - (platformer.map[i2].pos[1] + platformer.map[i2].size[1]);
-                var y2 = platformer.map[i1].pos[1] + platformer.map[i1].size[1] - (platformer.map[i2].pos[1]);
-                return [x1, y1, x2, y2]
-            } else {
-
-            }
+        if (i1 == 'player') obj1 = platformer.player;
+        else obj1 = platformer.map[i1];
+        if (!obj1.isTransparent && !platformer.map[i2].isTransparent) {
+            var x1 = obj1.pos[0] - (platformer.map[i2].pos[0] + platformer.map[i2].size[0]);
+            var x2 = platformer.map[i2].pos[0] - (obj1.pos[0] + obj1.size[0]);
+            var y1 = obj1.pos[1] - (platformer.map[i2].pos[1] + platformer.map[i2].size[1]);
+            var y2 = platformer.map[i2].pos[1] - (obj1.pos[1] + obj1.size[1]);
+            return [x1, y1, x2, y2]
         }
     },
     solve: function (coords, i1, i2 = undefined) {
-        const arr = coords.copy();
-        for (let i = 0; i < coords.length; i++) {
-            if (coords[i] > 0) coords.splice(i, 1), i--;
-        }
-        var m = coords.max();
-        if (platformer.display && platformer.displayMode == 'partial') {
-            if (platformer.map[i1].isVisible) {
-                platformer.display.getContext("2d").fillStyle = platformer.bgc;
-                platformer.display.getContext("2d").fillRect(platformer.map[i1].pos[0], platformer.map[i1].pos[1], platformer.map[i1].size[0], platformer.map[i1].size[1]);
+        if (coords.max() < 0) {
+            if (i1 == 'player') obj1 = platformer.player;
+            else obj1 = platformer.map[i1];
+            var m = coords.max();
+            if (platformer.display && platformer.displayMode == 'partial') {
+                if (obj1.isVisible) {
+                    platformer.display.getContext("2d").fillStyle = platformer.bgc;
+                    platformer.display.getContext("2d").fillRect(obj1.pos[0], obj1.pos[1], obj1.size[0], obj1.size[1]);
+                }
+                if (i2 && platformer.map[i2].isVisible) {
+                    platformer.display.getContext("2d").fillStyle = platformer.bgc;
+                    platformer.display.getContext("2d").fillRect(platformer.map[i2].pos[0], platformer.map[i2].pos[1], platformer.map[i2].size[0], platformer.map[i2].size[1]);
+                }
             }
-            if (i2 && platformer.map[i2].isVisible) {
-                platformer.display.getContext("2d").fillStyle = platformer.bgc;
-                platformer.display.getContext("2d").fillRect(platformer.map[i2].pos[0], platformer.map[i2].pos[1], platformer.map[i2].size[0], platformer.map[i2].size[1]);
-            }
-        }
-        if (isMultipleOf(arr.indexOf(m), 2)) platformer.map[i1].pos[1] += (isMultipleOf(arr.indexOf(m), 4) ? -arr[1] : arr[3]);
-        else platformer.map[i1].pos[0] += (isMultipleOf(arr.indexOf(m), 3) ? -arr[0] : arr[2]);
-        if (platformer.display && platformer.displayMode == 'partial') {
-            if (platformer.map[i1].color) platformer.display.getContext("2d").fillStyle = platformer.map[i1].color;
-            if (platformer.map[i1].isVisible) platformer.display.getContext("2d").fillRect(platformer.map[i1].pos[0], platformer.map[i1].pos[1], platformer.map[i1].size[0], platformer.map[i1].size[1]);
-            if (platformer.map[i2].color) platformer.display.getContext("2d").fillStyle = platformer.map[i2].color;
-            if (platformer.map[i2].isVisible) platformer.display.getContext("2d").fillRect(platformer.map[i2].pos[0], platformer.map[i2].pos[1], platformer.map[i2].size[0], platformer.map[i2].size[1]);
+            if (isMultipleOf(coords.indexOf(m), 2)) obj1.pos[1] += (isMultipleOf(coords.indexOf(m), 4) ? -coords[1] : -coords[3]);
+            else obj1.pos[0] += (isMultipleOf(coords.indexOf(m), 3) ? -coords[0] : -coords[2]);
+            if (platformer.display && platformer.displayMode == 'partial') {
+                if (obj1.color) platformer.display.getContext("2d").fillStyle = obj1.color;
+                if (obj1.isVisible) platformer.display.getContext("2d").fillRect(obj1.pos[0], obj1.pos[1], obj1.size[0], obj1.size[1]);
+                if (platformer.map[i2].color) platformer.display.getContext("2d").fillStyle = platformer.map[i2].color;
+                if (platformer.map[i2].isVisible) platformer.display.getContext("2d").fillRect(platformer.map[i2].pos[0], platformer.map[i2].pos[1], platformer.map[i2].size[0], platformer.map[i2].size[1]);
 
+            }
         }
-        return platformer.map[i1].pos
+        return obj1.pos
     },
     buildSquare: function (x, y, w, h, isTransparent = false, isVisible = false, isDeadly = false, color = '', index = platformer.map.length) {
         platformer.map[platformer.map.length] = { type: 'square', pos: [x, y], size: [w, h], isTransparent: isTransparent, isVisible: isVisible, isDeadly: isDeadly, color: color, index: index };
@@ -889,32 +1203,48 @@ var platformer = {
     prepBroad: function () {
 
     }
-}
-//TODO: Sort. This. Fucking. Mess.
-//TODO: From there...
+};
 //2D block game handler
 var tiled = {
-    texture: { size: 8, pos: (x, y) => [texture.size * x, texture.size * y], },
+    texture: { size: 8, pos: (x, y) => [texture.size * x, texture.size * y], },//outdated
     blocks: [],
     map: [],
+    loaded: [],
     settings: {},
+    render: { distance: 0, tool: undefined },
     metadata: { region: [] },
     getBlockId: function (block) {
         var t = -1;
-        for (let i = 0; i < blocks.length; i++) {
-            if (type == blocks[i].name) {
+        for (let i = 0; i < tiled.blocks.length; i++) {
+            if (block == tiled.blocks[i].name) {
                 t = i;
-                i = blocks.length;
+                i = tiled.blocks.length;
             }
         }
         return t
     },
-    Setup: function (subLevels, layers, chkSize, dataDef, type = []) {
+    getChunkId: function (coordinates) {
+        var c = -1;
+        for (let i = 0; i < tiled.map.length; i++) {
+            if (tiled.map[i].pos == coordinates.toString()) c = i, i = tiled.map.length;
+        }
+        return c
+    },
+    entityCollide: function (coords, size, layer) {
+        for (let y = Math.floor(coords[0] - size / 2); y < Math.ceil(coords[0] + size / 2); y++) {
+            for (let x = Math.floor(coords[0] - size / 2); x < Math.ceil(coords[0] + size / 2); x++) {
+
+            }
+        }
+    },
+    Setup: function (subLevels, layers, chkSize, blockSize, pxlSize, dataDef, type = []) {
         tiled.settings.subLevels = subLevels;
         tiled.settings.layers = layers;
         tiled.settings.dataDef = dataDef;
         tiled.settings.typeData = type;
         tiled.settings.chunkSize = chkSize;
+        tiled.settings.blockSize = blockSize;
+        tiled.settings.pixelSize = pxlSize;
         var s = Object.getOwnPropertyNames(tiled.metadata);
         for (let i = 0; i < s.length; i++) {
             for (let j = 0; j < type.length; j++) {
@@ -926,54 +1256,194 @@ var tiled = {
         tiled.metadata.region.push(r);
     },
     BuildChunk: function (coordinates, data = undefined) {
-        var c = null;
-        for (let i = 0; i < tiled.map.length; i++) {
-            if (tiled.map[i].pos == coordinates.toString()) c = tiled.map[i].pos, i = tiled.map.length;
-        }
+        var c = tiled.getChunkId(coordinates);
         var t = tiled.map.length;
-        if (c == null) {
+        if (c == -1) {
             tiled.map[t] = {
-                data: [], pos: coordinates, meta: [],
+                data: [], pos: coordinates, meta: [], raw: []
             };
-            for (let i = 0; i < tiled.settings.layers; i++) tiled.map[t].data[i] = [];
+            for (let i = 0; i < tiled.settings.layers; i++) tiled.map[t].data[i] = [], tiled.map[t].raw[i] = [];
             if (data != undefined) { var a = tiled.EditChunk(coordinates, data); return [tiled.map[t], a]; }
             else return tiled.map[t]
         } else return c
     },
     EditChunk: function (coordinates, data) {
-        var c = null; var t = 0;
-        for (let i = 0; i < tiled.map.length; i++) {
-            if (tiled.map[i].pos == coordinates.toString()) c = tiled.map[i].pos, t = i, i = tiled.map.length;
-        }
-        if (c != null) {
+        var t = tiled.getChunkId(coordinates);
+        if (t != -1) {
             tiled.map[t].meta[tiled.map[t].meta.length] = data;
-        } else return coordinates
+            return data
+        } return coordinates
     },
-    Fill: function (coordinates, layer, subLevel, data) {
-        var c = null;
-        for (let i = 0; i < tiled.map.length; i++) {
-            if (tiled.map[i].pos == coordinates.toString()) c = i, i = tiled.map.length;
-        }
+    loadChunk: function (disp, coordinates, layer, isRaw = false) {
+        var c = tiled.getChunkId(coordinates);
         if (c != null) {
-            var p = 256; var t = -1; var from = -1;
-            for (let i = 0; i < tiled.metadata.region.length; i++) {
-                if (tiled.metadata.region[i].name == tiled.map[c].meta[i].from) from = i, i = tiled.metadata.region.length;
+            var s = tiled.settings.chunkSize; var b = tiled.settings.blockSize; var p = tiled.settings.pixelSize; var chkData;
+            if (isRaw) {
+                chkData = tiled.map[c].raw[layer];
+            } else {
+                chkData = tiled.map[c].data[layer];
             }
-            for (let i = 0; i < tiled.map[c].meta.length; i++) {
-                if (tiled.metadata.region[from].type == 'generative' && tiled.metadata.region[from].priority < p) p = tiled.metadata.region[from].priority, t = i;
-            }
-            var arr = [];
-            for (let y = 0; y < data; y++) {
-                var a = [];
-                for (let x = 0; x < data[y]; x++) {
-                    for (let i = 0; i < tiled.map[c].meta[t].depth[layer][subLevel].length; i++) {
-                        if (tiled.map[c].meta[t].depth[layer][subLevel][i][0] >= data[y][x]) a.push(this.getBlockId(tiled.map[c].meta[t].depth[layer][subLevel][i][1]));
+            var dat = disp.getContext("2d").createImageData(s * b * p, s * b * p);
+            for (let subL = 0; subL < chkData.length; subL++) {
+                for (let y = 0; y < chkData[subL].length; y++) {
+                    for (let x = 0; x < chkData[subL][y].length; x++) {
+                        if (typeof (tiled.blocks[0]) == "object") {
+                            if (!tiled.blocks[chkData[subL][y][x]].random) {
+                                var t = tiled.blocks[chkData[subL][y][x]].texture;
+                                if (typeof (t[1]) == 'object') {
+                                    var seed = rand.seed;
+                                    rand.setup(1 / t[0]);
+                                    for (let my = 0; my < b; my++) {
+                                        for (let mx = 0; mx < b; mx++) {
+                                            var clr = t[1];
+                                            var a = rand.lcg();
+                                            var sum = a;
+                                            var r = [];
+                                            for (let i = 2; i < t.length; i++) {
+                                                if (sum >= 1 - t[i][1]) {
+                                                    clr = t[i][0];
+                                                    i = t.length;
+                                                } else {
+                                                    sum += a;
+                                                }
+                                            }
+                                            //scale up
+                                            for (let dy = 0; dy < p; dy++) {
+                                                for (let dx = 0; dx < p; dx++) {
+                                                    dat.data[s * (b ** 2) * (p ** 2) * 4 * y + s * b * (p ** 2) * 4 * my + s * b * p * 4 * dy + b * p * 4 * x + p * 4 * mx + 4 * dx + 0] = clr[0];
+                                                    dat.data[s * (b ** 2) * (p ** 2) * 4 * y + s * b * (p ** 2) * 4 * my + s * b * p * 4 * dy + b * p * 4 * x + p * 4 * mx + 4 * dx + 1] = clr[1];
+                                                    dat.data[s * (b ** 2) * (p ** 2) * 4 * y + s * b * (p ** 2) * 4 * my + s * b * p * 4 * dy + b * p * 4 * x + p * 4 * mx + 4 * dx + 2] = clr[2];
+                                                    dat.data[s * (b ** 2) * (p ** 2) * 4 * y + s * b * (p ** 2) * 4 * my + s * b * p * 4 * dy + b * p * 4 * x + p * 4 * mx + 4 * dx + 3] = clr[3];
+                                                }
+                                            }
+                                        }
+                                    }
+                                    rand.setup(seed);
+                                } else {
+                                    //var t = texture.pos(t[0], t[1]);
+                                    //disp.getContext("2d").drawImage(image, t[0], t[1], texture.size, texture.size, 8 * x, 8 * y, 8, 8);
+                                }
+
+                            } else {
+                                var t = tile.blocks[coords.medium[y][x]].texture;
+                                var img = ctx.createImageData(32, 32);
+                                var ttr = [];
+                                for (let my = 0; my < 8; my++) {
+                                    for (let mx = 0; mx < 8; mx++) {
+                                        var clr = t[0];
+                                        var a = rand.lcg();
+                                        var sum = a;
+                                        var r = [];
+                                        for (let i = 1; i < t.length; i++) {
+                                            if (sum >= 1 - t[i][1]) {
+                                                clr = t[i][0];
+                                                i = t.length;
+                                            } else {
+                                                sum += a;
+                                            }
+                                        }
+                                        //scale up
+                                        for (let dy = 0; dy < 4; dy++) {
+                                            for (let dx = 0; dx < 4; dx++) {
+                                                img.data[16 * mx + 512 * my + 4 * dx + 128 * dy] = clr[0];
+                                                img.data[16 * mx + 512 * my + 4 * dx + 128 * dy + 1] = clr[1];
+                                                img.data[16 * mx + 512 * my + 4 * dx + 128 * dy + 2] = clr[2];
+                                                img.data[16 * mx + 512 * my + 4 * dx + 128 * dy + 3] = clr[3];
+                                            }
+                                        }
+                                        r.push(clr);
+                                    }
+                                    ttr.push(r);
+                                }
+                                disp.getContext("2d").putImageData(img, 32 * x, 32 * y);
+                            }
+                        } else {
+                            var clr = Math.round(256 * chkData[subL][y][x]);
+                            for (let my = 0; my < b; my++) {
+                                for (let mx = 0; mx < b; mx++) {
+                                    for (let dy = 0; dy < p; dy++) {
+                                        for (let dx = 0; dx < p; dx++) {
+                                            dat.data[s * (b ** 2) * (p ** 2) * 4 * y + s * b * (p ** 2) * 4 * my + s * b * p * 4 * dy + b * p * 4 * x + p * 4 * mx + 4 * dx + 0] = clr;
+                                            dat.data[s * (b ** 2) * (p ** 2) * 4 * y + s * b * (p ** 2) * 4 * my + s * b * p * 4 * dy + b * p * 4 * x + p * 4 * mx + 4 * dx + 1] = clr;
+                                            dat.data[s * (b ** 2) * (p ** 2) * 4 * y + s * b * (p ** 2) * 4 * my + s * b * p * 4 * dy + b * p * 4 * x + p * 4 * mx + 4 * dx + 2] = clr;
+                                            dat.data[s * (b ** 2) * (p ** 2) * 4 * y + s * b * (p ** 2) * 4 * my + s * b * p * 4 * dy + b * p * 4 * x + p * 4 * mx + 4 * dx + 3] = 255;
+                                        }
+                                    }
+                                }
+                            }
+
+                        }
+
                     }
                 }
-                arr.push(a);
             }
-            tiled.map[c].data[layer][subLevel] = arr;
-            return tiled.map[c].data[layer][subLevel]
+            tiled.loaded.push({ pos: coordinates, img: dat });
+            return { pos: coordinates, img: dat }
+        } return 0
+    },
+    render: function (disp, dist) {
+        disp.width = 50 * 32 * (2 * dist + 1);
+        disp.height = 50 * 32 * (2 * dist + 1);
+        var ctx = disp.getContext("2d");
+    },
+    smoothen: function (cords, layer, subLevel) {
+        var a = []; var i = 0;
+        for (let y = -1; y < 2; y++) {
+            for (let x = -1; x < 2; x++) {
+                a[i] = tiled.getChunkId([cords[0] + y, cords[1] + x]);
+                i++;
+            }
+        }
+        if (a.min() != -1) {
+            var arr = [[[], [], []], [[], [], []], [[], [], []]];
+            var i = 0;
+            for (let y = 0; y < 3; y++) {
+                for (let x = 0; x < 3; x++) {
+                    arr[x][y] = tiled.map[a[i]].raw[layer][subLevel];
+                    i++;
+                }
+            }
+            arr = hyperBilinInterp(arr, 0.5);
+            return arr;
+        }
+    },
+    Fill: function (coordinates, layer, subLevel, data, partial = false) {
+        var c = tiled.getChunkId(coordinates);
+        if (c != -1) {
+            var p = 256; var t = -1; var from = -1;
+            if (tiled.metadata.region.length > 0) {
+                for (let i = 0; i < tiled.metadata.region.length; i++) {
+                    if (tiled.metadata.region[i].name == tiled.map[c].meta[i].from) from = i, i = tiled.metadata.region.length;
+                }
+                for (let i = 0; i < tiled.map[c].meta.length; i++) {
+                    if (tiled.metadata.region[from].type == 'generative' && tiled.metadata.region[from].priority < p) p = tiled.metadata.region[from].priority, t = i;
+                }
+                var arr = [];
+                if (!partial) {
+                    for (let y = 0; y < data.length; y++) {
+                        var a = [];
+                        for (let x = 0; x < data[y].length; x++) {
+                            for (let i = 0; i < tiled.map[c].meta[t].depth[layer][subLevel].length; i++) {
+                                if (tiled.map[c].meta[t].depth[layer][subLevel][i][0] >= data[y][x]) a.push(tiled.getBlockId(tiled.map[c].meta[t].depth[layer][subLevel][i][1])), i = Infinity;
+                            }
+                        }
+                        arr.push(a);
+                    }
+                    tiled.map[c].data[layer][subLevel] = arr;
+                    return tiled.map[c].data[layer][subLevel]
+                } else {
+                    tiled.map[c].raw[layer][subLevel] = data;
+                    return tiled.map[c].raw[layer][subLevel]
+                }
+            } else {
+                if (!partial) {
+                    tiled.map[c].data[layer][subLevel] = data;
+                    return tiled.map[c].data[layer][subLevel]
+                } else {
+                    tiled.map[c].raw[layer][subLevel] = data;
+                    return tiled.map[c].raw[layer][subLevel]
+                }
+            }
         } else return coordinates
     },
     Filter: function (chunk, array) {
@@ -993,60 +1463,67 @@ var tiled = {
                 coords.medium.push(r);
             }
     },
+    /*genRegFill: function (data, regDat, l, s) {
+        for (let y = 0; y < data.length; y++) {
+            for (let x = 0; x < data[x].length; x++) {
+                for (let i = 0; i < regDat[l][s].length; i++) {
+                    if (regDat[l][s][i][0] >= data[x][y]) data[x][y] = tiled.getBlockId(regDat[l][s][i][1]);
+                }
+            }
+        }
+    },*/
     World: function (size, generator = rand.gen2D) {
-        console.info('Hold on.. generating world..')
-        for (let y = 0; y < size; y++) {
-            for (let x = 0; x < size; x++) {
-                this.BuildChunk([x, y]);
+        //important: c
+        rand.grdRand(2 * size + 3, 2 * size + 3);
+        console.info('Hold on.. generating world..');
+        console.time('Done!');
+        //Preload and raw fill chunks for radius = n+1
+        for (let y = -size - 1; y < size + 2; y++) {
+            for (let x = -size - 1; x < size + 2; x++) {
+                this.BuildChunk([y, x]);
             }
         }
         for (let i = 0; i < tiled.metadata.region.length; i++) {
-            var arrey = generator(size, size);
+            var arrey = generator(2 * size + 3, 2 * size + 3, true, 16);
             var arr = [];
+            var b = rand.int(0, tiled.metadata.region.length + 1);
             for (let j = 0; j < arrey.length; j++) {
-                arr.push(arrey[j].map(x => Math.round(x * tiled.metadata.region[i].data.length)));
+                arr.push(arrey[j].map(function (x) { if (x > tiled.metadata.region[i].size) b = rand.int(0, tiled.metadata.region.length + 1); return b }));
             }
-            for (let y = 0; y < size; y++) {
-                for (let x = 0; x < size; x++) {
-                    this.EditChunk([x, y], tiled.metadata.region[i].data[arr[y][x]]);
+            console.log(arr);
+            for (let y = -size - 1; y < size + 2; y++) {
+                for (let x = -size - 1; x < size + 2; x++) {
+                    tiled.EditChunk([y, x], tiled.metadata.region[i].data[arr[y + size + 1][x + size + 1]]);
                 }
             }
-
         }
-        for (let y = 0; y < size; y++) {
-            for (let x = 0; x < size; x++) {
+        //Prepare array for fill.
+        for (let y = -size - 1; y < size + 2; y++) {
+            for (let x = -size - 1; x < size + 2; x++) {
                 for (let l = 0; l < tiled.settings.layers; l++) {
                     for (let s = 0; s < tiled.settings.subLevels; s++) {
-                        var arr = generator(tiled.settings.chunkSize, tiled.settings.chunkSize);
-                        this.Fill([x, y], l, s, arr)
+                        //var arr = rand.polygen2D(x + size + 1, y + size + 1, tiled.settings.chunkSize, tiled.settings.chunkSize);
+                        var arr = generator( tiled.settings.chunkSize, tiled.settings.chunkSize);
+                        tiled.Fill([y, x], l, s, arr, true);
                     }
                 }
             }
         }
+        for (let y = -size; y < size + 1; y++) {
+            for (let x = -size; x < size + 1; x++) {
+                for (let l = 0; l < tiled.settings.layers; l++) {
+                    for (let s = 0; s < tiled.settings.subLevels; s++) {
+                        var arr = tiled.smoothen([y,x], l, s); arr = arr[0][0];
+                        //var arr = tiled.map[tiled.getChunkId([y, x])].raw[l][s];
+                        tiled.Fill([y, x], l, s, arr);
+                    }
+                }
+            }
+        }
+        //Smooth and complete fill for radius = n
+        console.timeEnd('Done!');
     }
 };
-/*var texture = {
-    size: 8,
-    pos: (x, y) => [texture.size * x, texture.size * y],
-};
-var tile = {
-    Block: function (item) { tile.blocks[tile.blocks.length] = item },
-    randomTicks: function () { },
-    onTick: function () { },
-    blocks: [
-    ],
-    transitions: [
-    ]
-};
-//redesign this
-var coords = {
-    x: 0,
-    y: 0,
-    medium: [],
-    caves: []
-};*/
-//TODO: ...to here.
-
 //Interactive typing
 var text = {
     lps: 15,
@@ -1063,27 +1540,44 @@ var cursor = {
     x: 1,
     y: 1
 };
-//TODO: clean
 //keyboard
 var key = {
     spd: 5,
     enable: false,
     restrict: false,
+    addKey: function (key, action, param = void ("")) {
+        this.setKeyVal(key);
+        this.setKeyAct(key, action);
+        this.setKeyPar(key, param)
+    },
+    setKeyVal: function (k) { key.state[key.state.length] = k; key.val[k] = false; },
+    setKeyAct: function (k, act) { key.act[k] = act; },
+    setKeyPar: function (k, par) { key.par[k] = par },
     restrictions: function (x1, x2, y1, y2) {
         key.border.xMin = x1; key.border.xMax = x2; key.border.yMin = y1; key.border.yMax = y2; key.restrict = true;
     },
     border: { xMin: 0, xMax: 1, yMin: 0, yMax: 1 },
-    pos: { x: 100, y: 100 },
+    pos: { x: 0, y: 0 },
     state: [],
     val: {},
-    act: {}
+    act: {},
+    par: {},
+    action: function () {
+        var t = 0;
+        if (key.enable) {
+            for (let t = 0; t < key.state.length; t++) {
+                i = key.val[key.state[t]];
+                if (i == true) { key.act[key.state[t]](key.par[key.state[t]]); }
+            }
+            if (key.restrict) {
+                if (key.border.xMin >= key.pos.x) key.pos.x = key.border.xMin;
+                else if (key.border.xMax <= key.pos.x) key.pos.x = key.border.xMax;
+                if (key.border.yMin >= key.pos.y) key.pos.y = key.border.yMin;
+                else if (key.border.yMax <= key.pos.y) key.pos.y = key.border.yMax;
+            }
+        }
+    }
 };
-function setKeyVal(k) { key.state[key.state.length] = k; key.val[k] = false; }
-function setKeyAct(k, act) { key.act[k] = act; }
-setKeyVal("ArrowUp")
-setKeyVal("ArrowDown")
-setKeyVal("ArrowLeft")
-setKeyVal("ArrowRight")
 document.addEventListener("keydown", function (e) {
     e = e || event; // to deal with IE
     key.val[e.code] = e.type == 'keydown';
@@ -1093,31 +1587,10 @@ document.addEventListener("keyup", function (e) {
     key.val[e.code] = e.type == 'keydown'
     if (event.code == "Escape") { pause() }
 });
-function keymotion() {
-    var t = 0;
-    if (key.enable) {
-        pre();
-        for (let t = 0; t < key.state.length; t++) {
-            i = key.val[key.state[t]];
-            if (i == true) { key.act[key.state[t]](); }
-        }
-        if (key.restrict) {
-            if (key.border.xMin >= key.pos.x) key.pos.x = key.border.xMin;
-            else if (key.border.xMax <= key.pos.x) key.pos.x = key.border.xMax;
-            if (key.border.yMin >= key.pos.y) key.pos.y = key.border.yMin;
-            else if (key.border.yMax <= key.pos.y) key.pos.y = key.border.yMax;
-        }
-        post();
-    }
-}
 function load() { if (key.enable) keymotion(); }
-setKeyAct("ArrowUp", "function up() { key.pos.y -= key.spd; }")
-setKeyAct("ArrowDown", "function down() { key.pos.y += key.spd; }")
-setKeyAct("ArrowLeft", "function left() { key.pos.x -= key.spd; }")
-setKeyAct("ArrowRight", "function right() { key.pos.x += key.spd; }")
 document.addEventListener("mousemove", function (e) {
-    if (cursor.enable) { pre() }
+    if (cursor.enable) { }
     cursor.x = event.clientX;
     cursor.y = event.clientY;
-    if (cursor.enable) { post() }
+    if (cursor.enable) { }
 });

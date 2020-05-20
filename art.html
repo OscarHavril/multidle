@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+</head>
+
+<body>
+    <canvas id="game"></canvas>
+</body>
+<script src="madlib.js"></script>
+<script>
+    var x = 0;
+    noise = () => rand.noise(x++);
+    tiled.Setup(3, 3, 100, 1, 1);
+    rand.setup(1 / rand.real(0, 100000000000));
+    var size = 3;
+    tiled.World(size);
+    var c = document.getElementById("game");
+    var ctx = c.getContext("2d");
+    c.width = window.innerWidth;
+    c.height = window.innerHeight;
+    for (let i = -size; i < size + 1; i++) {
+        for (let j = -size; j < size + 1; j++) {
+            tiled.loadChunk(c, [i, j], 0);
+        }
+    }
+    for (let i = -size; i < size + 1; i++) {
+        for (let j = -size; j < size + 1; j++) {
+            tiled.loadChunk(c, [i, j], 0, true);
+        }
+    }
+    var res = function () { c.width = window.innerWidth; c.height = window.innerHeight; }
+    for (let i = 0; i < 2 * size + 1; i++) {
+        for (let j = 0; j < 2 * size + 1; j++) {
+            ctx.putImageData(tiled.loaded[i * (2 * size + 1) + j].img, tiled.settings.chunkSize * tiled.settings.blockSize * tiled.settings.pixelSize * j, tiled.settings.chunkSize * tiled.settings.blockSize * tiled.settings.pixelSize * i);
+        }
+    }
+    for (let i = 0; i < 2 * size + 1; i++) {
+        for (let j = 0; j < 2 * size + 1; j++) {
+            ctx.putImageData(tiled.loaded[i * (2 * size + 1) + j + (2 * size + 1) * (2 * size + 1)].img, tiled.settings.chunkSize * tiled.settings.blockSize * tiled.settings.pixelSize * (j + 2 * size + 1) + 100, tiled.settings.chunkSize * tiled.settings.blockSize * tiled.settings.pixelSize * (i));
+        }
+    }
+    //0.1810459860266831
+    //rand.gen3D(c.width, c.height, 120, false);
+    //rand.marble3D();
+    //var arr = rand.level3D(.72);
+    /*function gen(alg) {
+        rand.gen3D(c.width, c.height, 30, false, alg);
+        rand.quadr3D();
+        return rand.level3D();
+    }
+    var arr = gen(true);
+    function spdTest() {
+        var d = new Date();
+        var n = d.getTime();
+        gen(true);
+        d = new Date();
+        var a = d.getTime() - n;
+        d = new Date();
+        var n2 = d.getTime();
+        gen(false);
+        d = new Date();
+        var a2 = d.getTime() - n2;
+        return (a - a2 > 0 ? 'Sinusoidal algorithm faster (' + a2 + 'ms vs ' + a + 'ms) by a factor of ' + a / a2 : 'Linear algorithm faster (' + a + 'ms vs ' + a2 + 'ms) by a factor of ' + a2 / a);
+    }
+    //rand.marble();
+    //var arr = rand.level();
+    //rand.fog(2, 0);
+    //var arr = rand.grain(0.6);
+    var ctx = c.getContext("2d");
+    ctx.fillStyle = "#000000";
+    ctx.fillRect(0, 0, c.width, c.height);
+    var g = 0;
+    var z = 0;
+    function anim3D() {
+        for (let x = 0; x < c.width; x++) {
+            for (let y = 0; y < c.height; y++) {
+                if (rand.map.elem[z][y][x] > g) { g = rand.map.elem[z][y][x]; }
+                var grad = Math.round(256 * arr[z][y][x]);
+                ctx.fillStyle = "rgb(" + grad + ', ' + grad + ', ' + grad + ')';
+                ctx.fillRect(x, y, 1, 1)
+            }
+        }
+        z++
+        if (z < rand.map.z) { setTimeout(anim3D, 1); }
+    }
+    function anim() {
+        for (let x = 0; x < c.width; x++) {
+            for (let y = 0; y < c.height; y++) {
+                if (rand.map.elem[y][x] > g) { g = rand.map.elem[y][x]; }
+                var grad = Math.round(256 * arr[y][x]);
+                ctx.fillStyle = "rgb(" + grad + ', ' + grad + ', ' + grad + ')';
+                ctx.fillRect(x, y, 1, 1)
+            }
+        }
+    }
+    if (typeof (rand.map.elem[0][0]) == "object") {
+        anim3D();
+    } else {
+        anim();
+    }
+    console.log(g);*/
+</script>
+
+</html>

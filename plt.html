@@ -28,6 +28,10 @@
             var a = platformer.buildSquare(x, y, w, h, isTransparent, isVisible, isDeadly, color);
             return a
         }
+        key.addKey("ArrowUp", platformer.plJump);
+        key.addKey("ArrowLeft", platformer.plMove, 'left');
+        key.addKey("ArrowRight", platformer.plMove, 'right');
+        key.enable = true;
         rand.setup(1/rand.real(0, 100000000000));
         var c = document.getElementById("game")
         c.width = window.innerWidth;
@@ -55,6 +59,16 @@
             var a = d.getTime() - n;
             console.log(a+'ms');
         }
+        platformer.buildSquare(0,0,1000,100, false, true, false, color = 'green');
+        platformer.respawn(140,110,10,20,120,0,0,5, false, true, color = 'blue');
+        var x = 0;
+        function playAll() {
+            key.action()
+            platformer.plFall();
+            x++;
+            if (c === document.activeElement) setTimeout(playAll, 1000/60);
+        }
+        document.getElementById("game").addEventListener("focus", playAll())
     </script>
 </body>
 

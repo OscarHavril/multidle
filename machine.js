@@ -42,92 +42,44 @@ var biomes = {
     name: 'biome',
     type: 'generative',
     priority: 1,
-    size: 64,
+    size: 0.8,
     data: [
         {
             from: 'biome',
             name: 'plains',
             depth: [
-                [[[0.9, 'dirt'], [1, 'stone']], [[.25, 'water'], [0.3, 'sand'], [0.7, 'grass'], [1, 'stone']], [[.7, 'empty'], [1, 'stone']],],
-                [[[0.9, 'dirt'], [1, 'stone']], [[.25, 'water'], [0.3, 'sand'], [0.7, 'grass'], [1, 'stone']], [[.7, 'empty'], [1, 'stone']],],
-                [[[0.9, 'dirt'], [1, 'stone']], [[.25, 'water'], [0.3, 'sand'], [0.7, 'grass'], [1, 'stone']], [[.7, 'empty'], [1, 'stone']],],
+                [[[0.9, 'grass'], [1, 'stone']], [[.25, 'water'], [0.3, 'sand'], [0.85, 'grass'], [1, 'stone']], [[.85, 'empty'], [1, 'stone']],],
+                [[[0.9, 'grass'], [1, 'stone']], [[.25, 'water'], [0.3, 'sand'], [0.7, 'grass'], [1, 'stone']], [[.7, 'empty'], [1, 'stone']],],
+                [[[0.9, 'grass'], [1, 'stone']], [[.25, 'water'], [0.3, 'sand'], [0.7, 'grass'], [1, 'stone']], [[.7, 'empty'], [1, 'stone']],],
             ]
         },
         {
             from: 'biome',
             name: 'desert',
             depth: [
-                [[[0.9, 'dirt'], [1, 'stone']], [[.15, 'water'], [0.3, 'sand'], [0.7, 'grass'], [1, 'stone']], [[.7, 'empty'], [1, 'stone']],],
-                [[[0.9, 'dirt'], [1, 'stone']], [[.25, 'water'], [0.3, 'sand'], [0.7, 'grass'], [1, 'stone']], [[.7, 'empty'], [1, 'stone']],],
-                [[[0.9, 'dirt'], [1, 'stone']], [[.25, 'water'], [0.3, 'sand'], [0.7, 'grass'], [1, 'stone']], [[.7, 'empty'], [1, 'stone']],]
-            ]
-        },
-    ]
-};
-var b2 = {
-    name: 'b2',
-    type: 'generative',
-    priority: 2,
-    size: 64,
-    data: [
-        {
-            from: 'b2',
-            name: 'plains',
-            depth: [
-                [[[0.9, 'dirt'], [1, 'stone']], [[.15, 'water'], [0.3, 'sand'], [0.7, 'grass'], [1, 'stone']], [[.7, 'empty'], [1, 'stone']],],
-                [[[0.9, 'dirt'], [1, 'stone']], [[.25, 'water'], [0.3, 'sand'], [0.7, 'grass'], [1, 'stone']], [[.7, 'empty'], [1, 'stone']],],
-                [[[0.9, 'dirt'], [1, 'stone']], [[.25, 'water'], [0.3, 'sand'], [0.7, 'grass'], [1, 'stone']], [[.7, 'empty'], [1, 'stone']],]
+                [[[0.9, 'grass'], [1, 'stone']], [[.15, 'water'], [0.85, 'sand'], [1, 'stone']], [[.85, 'empty'], [1, 'stone']],],
+                [[[0.9, 'grass'], [1, 'stone']], [[.25, 'water'], [0.3, 'sand'], [1, 'stone']], [[.7, 'empty'], [1, 'stone']],],
+                [[[0.9, 'grass'], [1, 'stone']], [[.25, 'water'], [0.3, 'sand'], [1, 'stone']], [[.7, 'empty'], [1, 'stone']],]
             ]
         },
         {
             from: 'biome',
-            name: 'desert',
+            name: 'ocean',
             depth: [
-                [[[0.9, 'dirt'], [1, 'stone']], [[.15, 'water'], [0.3, 'sand'], [0.7, 'grass'], [1, 'stone']], [[.7, 'empty'], [1, 'stone']],],
-                [[[0.9, 'dirt'], [1, 'stone']], [[.25, 'water'], [0.3, 'sand'], [0.7, 'grass'], [1, 'stone']], [[.7, 'empty'], [1, 'stone']],],
-                [[[0.9, 'dirt'], [1, 'stone']], [[.25, 'water'], [0.3, 'sand'], [0.7, 'grass'], [1, 'stone']], [[.7, 'empty'], [1, 'stone']],]
+                [[[0.3, 'grass'], [1, 'stone']], [[.8, 'water'], [1, 'sand']], [[1, 'empty']],],
+                [[[0.9, 'grass'], [1, 'stone']], [[.25, 'water'], [0.3, 'sand']], [[.7, 'empty']],],
+                [[[0.9, 'grass'], [1, 'stone']], [[.25, 'water'], [0.3, 'sand']], [[.7, 'empty']],]
             ]
         },
     ]
 };
-console.info('Gaem ready, version ' + updateLogs[updateLogs.length - 1].v);
-logs.load(updateLogs, updateLogs[updateLogs.length - 1].v);
-tiled.Setup(3, 3, 50, [biomes, b2], ['region', 'region']);
-//console.dir(tiled.BuildChunk([0, 0], { biome: 'none' }));
-var tickspeed = 0.1;
-var timer = 0;
-rand.setup(1/rand.real(0, 100000000000));
-/*if (rand.seed <= .25) { chunk.biome = "cold" }
-else if (rand.seed <= .5) { chunk.biome = "desert" }
-else { chunk.biome = "plains" }
-for (let px = 0; px < 100; px++) {
-    for (let py = 0; py < 100; py++) {
-        var newBlock = Math.abs(rand.marble(.01 * px, .01 * py));
-        if (chunk.biome == "cold") {
-            if (newBlock <= .25) { chunk.blocks[px][py] = "ice" }
-            else { chunk.blocks[px][py] = "snow" }
-        }
-        if (chunk.biome == "desert") {
-            if (newBlock <= .25) { chunk.blocks[px][py] = "water" }
-            else { chunk.blocks[px][py] = "sand" }
-        }
-        if (chunk.biome == "plains") {
-            if (newBlock <= .25) { chunk.blocks[px][py] = "water" }
-            else if (newBlock <= .35) { chunk.blocks[px][py] = "sand" }
-            else if (newBlock <= .75) { chunk.blocks[px][py] = "grass" }
-            else { chunk.blocks[px][py] = "snow" }
-        }
-    }
-}*/
 var blocks = [
     {
         name: 'empty',
         animated: false,
         random: false,
         texture: 'none',
-        playerLevel: true,
-        groundLevel: true,
-        solid: false,
+        density: 0,
         hardness: 0,
     },
     {
@@ -135,9 +87,7 @@ var blocks = [
         animated: false,
         random: false,
         texture: [595724, [156, 204, 101, 255], [[124, 179, 66, 255], 0.0625]],
-        playerLevel: false,
-        groundLevel: true,
-        solid: true,
+        density: 1,
         hardness: 5,
     },
     {
@@ -145,9 +95,7 @@ var blocks = [
         animated: false,
         random: false,
         texture: [87916, [255, 238, 88, 255], [[253, 216, 53, 255], 0.203125]],
-        playerLevel: false,
-        groundLevel: true,
-        solid: true,
+        density: 1,
         hardness: 3,
     },
     {
@@ -201,6 +149,75 @@ var blocks = [
         hardness: 500,
     },
 ];
+console.info('Gaem ready, version ' + updateLogs[updateLogs.length - 1].v);
+logs.load(updateLogs, updateLogs[updateLogs.length - 1].v);
+tiled.Setup(3, 3, 50, 5, 1, [biomes], ['region']);
+tiled.blocks = blocks;
+rand.setup(1 / rand.real(0, 100000000000));
+tiled.World(2);
+//console.dir(tiled.BuildChunk([0, 0], { biome: 'none' }));
+key.enable = true;
+var tickspeed = 0.1;
+var timer = 0;
+var c = document.getElementById("game");
+var ctx = c.getContext("2d");
+c.width = window.innerWidth;
+c.height = window.innerHeight;
+for (let i = -2; i < 3; i++) {
+    for (let j = -2; j < 3; j++) {
+        tiled.loadChunk(c, [i, j], 0);
+    }
+}
+var res = function () { c.width = window.innerWidth; c.height = window.innerHeight; }
+key.addKey("ArrowUp", function () { key.pos.y += 5 });
+key.addKey("ArrowLeft", function () { key.pos.x += 5 });
+key.addKey("ArrowRight", function () { key.pos.x -= 5 });
+key.addKey("ArrowDown", function () { key.pos.y -= 5 });
+var t = 0;
+var d = new Date();
+stats.create();
+stats.create();
+var alpha = false;
+function tick() {
+    var a = new Date();
+    t++;
+    key.action();
+    for (let i = 0; i < 5; i++) {
+        for (let j = 0; j < 5; j++) {
+            ctx.putImageData(tiled.loaded[i * 5 + j].img, tiled.settings.chunkSize * tiled.settings.blockSize * tiled.settings.pixelSize * j + key.pos.x, tiled.settings.chunkSize * tiled.settings.blockSize * tiled.settings.pixelSize * i + key.pos.y);
+        }
+    }
+    if (Math.round(a / 1000) != Math.round(d / 1000)) stats.arr[0].li.push(t), t = 0, d = new Date();
+    var b = new Date();
+    stats.arr[1].li.push(b - a);
+    requestAnimationFrame(tick);
+};
+tick();
+window.onresize = res;
+//setInterval(tick, 1000 / 200);
+/*if (rand.seed <= .25) { chunk.biome = "cold" }
+else if (rand.seed <= .5) { chunk.biome = "desert" }
+else { chunk.biome = "plains" }
+for (let px = 0; px < 100; px++) {
+    for (let py = 0; py < 100; py++) {
+        var newBlock = Math.abs(rand.marble(.01 * px, .01 * py));
+        if (chunk.biome == "cold") {
+            if (newBlock <= .25) { chunk.blocks[px][py] = "ice" }
+            else { chunk.blocks[px][py] = "snow" }
+        }
+        if (chunk.biome == "desert") {
+            if (newBlock <= .25) { chunk.blocks[px][py] = "water" }
+            else { chunk.blocks[px][py] = "sand" }
+        }
+        if (chunk.biome == "plains") {
+            if (newBlock <= .25) { chunk.blocks[px][py] = "water" }
+            else if (newBlock <= .35) { chunk.blocks[px][py] = "sand" }
+            else if (newBlock <= .75) { chunk.blocks[px][py] = "grass" }
+            else { chunk.blocks[px][py] = "snow" }
+        }
+    }
+}*/
+
 var trans = [
     {
         from: 'sand',
@@ -250,14 +267,14 @@ var trans = [
         tile: [2, 2],
     },
 ];
-tiled.blocks = blocks;
-for (let i = 0; i < blocks.length; i++) {
-    tile.Block(blocks[i]);
-}
+
+//for (let i = 0; i < blocks.length; i++) {
+//    tile.Block(blocks[i]);
+//}
 rand.gen2D(50, 50);
 var max = 0;
 var min = 1;
-for (let y = 0; y < 50; y++) {
+/*for (let y = 0; y < 50; y++) {
     var r = [];
     for (let x = 0; x < 50; x++) {
         if (max < rand.map.smoothed[y][x]) { max = rand.map.elem[y][x]; }
@@ -266,7 +283,7 @@ for (let y = 0; y < 50; y++) {
         r.push(a);
     }
     coords.medium.push(r);
-}
+}*/
 console.log(min, max);
 function spdTest(c1, c2) {
     var x = rand.xlc;
@@ -284,17 +301,16 @@ function spdTest(c1, c2) {
     rand.xlc = x;
     console.log(a, a2, a2 / a);
 }
-var c = document.getElementById("game")
-c.width = 50 * 32;
-c.height = 50 * 32;
-var ctx = c.getContext("2d");
-ctx.fillStyle = "#000000";
-var image = document.getElementById("source");
-ctx.fillRect(0, 0, 50 * 32, 50 * 32);
-ctx.imageSmoothingEnabled = false;
-ctx.scale(4, 4);
-var timer = 0;
-for (let y = 0; y < 50; y++) {
+
+
+
+//ctx.fillStyle = "#000000";
+//var image = document.getElementById("source");
+//ctx.fillRect(0, 0, 50 * 32, 50 * 32);
+//ctx.imageSmoothingEnabled = false;
+//ctx.scale(4, 4);
+//var timer = 0;
+/*for (let y = 0; y < 50; y++) {
     for (let x = 0; x < 50; x++) {
         if (!tile.blocks[coords.medium[y][x]].random) {
             var t = tile.blocks[coords.medium[y][x]].texture;
