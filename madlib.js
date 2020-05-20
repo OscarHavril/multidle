@@ -219,24 +219,25 @@ function hyperBilinInterp(array, power) {
                     if (dy > 0.5) dy = 1 - dy, sy = -sy;
                     dx = 2*dx, dy = 2*dy;
                     var cxy = norm(cx, cy);
-                    var dxy = norm(dx, dy);
+                    var dxy = norm(dx, dy)/Math.sqrt(2);
                     var adxy = [1 - dx, 1 - dy];
                     axy = adxy.max();
                     cxy = (cxy+(axy))/2;
                     var r = Math.abs(x - y);
                     var ax = 0, ay = 0, rx = 0, ry = 0;
                     // set rx ry ax ay; a = wall; r = diff.
-                    if (cx >= cy) ax = -sx, ry = Math.floor(mix(0, array[gy + ax][gx + ax][y].length / 2, dy - sy*(cy/cx)*dx)); // W/E WALL
-                    if (cx <= cy) ay = -sy, rx = Math.floor(mix(0, array[gy + ay][gx + ax].length / 2, dx - sx*(cx/cy)*dy)); // N/S WALL
+                    if (cx > cy) ax = -sx, ry = Math.floor(mix(0, array[gy + ax][gx + ax][y].length / 2, dy - sy*(cy/cx)*dx)); // W/E WALL
+                    if (cx < cy) ay = -sy, rx = Math.floor(mix(0, array[gy + ay][gx + ax].length / 2, dx - sx*(cx/cy)*dy)); // N/S WALL
                     if (ax < 0) rx = array[gy][gx][y].length - 1;
                     if (ay < 0) ry = array[gy][gx].length - 1;
-                    if (x == array[gy][gx][y].length / 2) ry = y;
-                    if (y == array[gy][gx].length / 2) rx = x;
+                    if (dx == 0.5) ry = y;
+                    if (dy == 0.5) rx = x;
                     //console.log(x, y, dx, dy, cx, cy, rx, ry, ax, ay)
                     //if (sx > 0 && dx <= dy) ax = -1, rx = array[gy][gx][y].length - 1, ry = y; //WEST
                     //else if (sx < 0 && dx <= dy) ax = 1, ry = y; //EAST
                     //if (sy > 0 && dx >= dy) ay = -1, ry = array[gy][gx].length - 1, rx = x; //NORTH
                     //else if (sy < 0 && dx >= dy) ay = 1, rx = x; //SOUTH
+                    //var value = mix(array[gy][gx][y][x], array[gy + ay][gx + ax][ry][rx], 1);
                     var value = mix(array[gy][gx][y][x], array[gy + ay][gx + ax][ry][rx], 1);
                     a.push(value);
                 }
