@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=8.0, user-scalable=no">
+    <meta charset="UTF-8">
+    <script>
+    </script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+    </style>
+</head>
+
+<body>
+    <!--
+    <div style="display:none;">
+        <img id="source" src="tiles.png">
+    </div>
+    <script src="madlib.js"></script>
+    -->
+    <canvas id="game"></canvas>
+    <script>
+        var randInt = (a, b, x = Math.random()) => Math.round(a + rand.lcg() * (b - a));
+        var randSign = (x = Math.random()) => (x > 0.5 ? 1 : -1);
+        var Flappy = function (disp) {
+            // NEED SETUP FUNCTION
+            this.trigger = undefined;
+            this.totalPassed = 0;
+            this.disp = disp;
+            this.visualSettings = { barColor: "#FFFFFF", bgColor: "#000000", playerColor: "#00FF00", displayMode: "color", playerBox: [10, 10] }
+            this.data = { automaticBarSummon: false, minBarCount: 2, barHoleSizeRange: [20, 50], barBoundaries: [10, 90], barOffsetRange: [5, 30], playerHeight: 0, playerHitBox: 10, upwardsStrengh: 10, upwardsMomentum: 0, gravitationalPull: 3, forwardSpeed: 0.5, bars: [], };
+            this.createBar = function (holeSize, holePos, width = this.settings.defaultWidth, pos = 100, passed = false) { //holePos refers to the position of the CENTER or the said hole, playerHitBox is the player's length
+                this.data.bars.push({ holePos: holePos, holeSize: holeSize, width: width, pos: pos, passed: passed }) //Lengths in 100 * percents
+            };
+            this.killBar = function (i) {
+                var r = this.data.bars[i].holePos;
+                delete this.data.bars[i];
+                return r;
+            };
+            this.flap = function () {
+                this.data.upwardsMomentum = this.data.upwardsStrengh;
+            };
+            this.prep = function (bars = this.data.minBarCount) {
+                for (let i = 0; i < bars; i++) {
+                    this.createBar(100, 50, 1, 100 * (i / bars), passed = true);
+                }
+                this.data.playerHeight = 50;
+                this.tick();
+            };
+            this.pass = function (i) {
+                this.data.bars[i].passed = true;
+                this.totalPassed++;
+            };
+            this.tick = function () {
+                Number.prototype.restrict = function (min, max) { if (min > this) return a; else if (max < this) return b; return this };
+                this.trigger = setTimeout(this.tick, 1000 / 60); // CHECK LOADING
+                this.data.upwardsStrengh -= this.data.gravitationalPull;
+                var stop = false;
+                var data = this.data;
+                var kill = this.killBar;
+                var pass = this.pass;
+                var stopper = this.stop;
+                var playerHeight = this.data.playerHeight;
+                var playerHitBox = this.data.playerHitBox;
+                this.data.bars.forEach(function (bar, i) {
+                    bar.pos -= data.forwardSpeed;
+                    if (bar.pos + bar.width >= 50 && bar.pos - bar.width <= 50) { //Can potentialy be hit
+                        if (bar.holePos + 0.5 * bar.holeSize <= playerHeight + 0.5 * playerHitBox || bar.holePos - 0.5 * bar.holeSize <= playerHeight - 0.5 * playerHitBox) {
+                            //Hit !
+                            stop = stopper();
+                        }
+                        if (bar.pos <= 50 && !bar.passed) pass(i);
+                    } else if (bar.pos + bar.width <= 0) kill = kill(i); // TO CHECK
+                });
+                var r = (randSign() * randInt(data.barOffsetRange[0], data.barOffsetRange[1]) + kill).restrict(data.barBoundaries[0], data.barBoundaries[1]);
+                if (data.automaticBarSummon && data.bars.length < data.minBarCount) this.createBar(randInt(data.barHoleSizeRange[0], data.barHoleSizeRange[1]), r,); // CHECK 'THIS' REF IN CALLED FUNCTIONS
+                if (stop) clearTimeout(this.trigger);
+                else this.draw();
+            };
+            this.stop = function () {
+                var height = this.disp.height;
+                var width = this.disp.width;
+                var ctx = this.disp.getContext("2d");
+                if (this.visualSettings.displayMode = 'color') {
+                    ctx.fillStyle = this.visualSettings.bgColor;
+                    ctx.fillRect(0, 0, width, height);
+                    ctx.font = "30px Aria";
+                    ctx.fillStyle = "red";
+                    ctx.textAlign = "center";
+                    ctx.fillText("Game Over", canvas.width / 2, canvas.height / 2 - 30);
+                    ctx.fillText("Score: ", canvas.width / 2, canvas.height / 2 - 30);
+                }
+                return true;
+            }
+            this.draw = function () {
+                var height = this.disp.height;
+                var width = this.disp.width;
+                var ctx = this.disp.getContext("2d");
+                if (this.visualSettings.displayMode = 'color') {
+                    ctx.fillStyle = this.visualSettings.bgColor;
+                    ctx.fillRect(0, 0, width, height);
+                    ctx.fillStyle = this.visualSettings.barColor;
+                    this.data.bars.forEach(bar => {
+                        if (Math.round(bar.holePos - bar.holeSize) > 0) ctx.fillRect((bar.pos - bar.width / 2) / 100 * width, 0, bar.width / 100 * width, Math.round((bar.holePos - bar.holeSize) / 100 * height));
+                        if (Math.round(bar.holePos + bar.holeSize) < 100) ctx.fillRect((bar.pos - bar.width / 2) / 100 * width, Math.round((bar.holePos + bar.holeSize) / 100 * height), bar.width / 100 * width, height);
+                    }); //top and bottom bar display
+                    ctx.fillStyle = this.visualSettings.playerColor;
+                    var playerHeight = this.data.playerHeight;
+                    var playerBox = this.visualSettings.playerBox;
+                    var playerHitBox = this.visualSettings.playerHitBox;
+                    ctx.fillRect(Math.round((50 - playerBox[0]) / 100 * width), Math.round((playerHeight - playerBox[1]) / 100 * height), playerBox[0], playerBox[1]);
+                }
+            }
+        }
+        var game = new Flappy();
+        game.prep();
+        document.addEventListener("keydown", function (e) {
+            game.flap();
+        });
+    </script>
+</body>
+
+</html>

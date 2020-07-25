@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=8.0, user-scalable=no">
+    <meta charset="UTF-8">
+    <script>
+    </script>
+    <style>
+        body {
+            background-color: green;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        .dead {
+            background-color: white;
+        }
+
+        .alive {
+            background-color: black;
+        }
+
+        .pending {
+            background-color: grey;
+        }
+        .pending-ennemy {
+            background-color: rgb(160, 138, 98);
+        }
+    </style>
+</head>
+
+<body>
+    <div id="game">
+    </div>
+    <script src="https://unpkg.com/konva@^2/konva.min.js"></script>
+    <script>
+        Array.prototype.copy = function () { return JSON.parse(JSON.stringify(this)); }
+        function serverSend() {
+            gol.retrievedData = gol_SERVER.toSend.copy();
+        }
+        function clientSend() {
+            gol_SERVER.tickData = gol.toSend.copy();
+        }
+        var gol_SERVER = {
+            settings: { recurrentUpdates: true, ennemyRecurrentVisibilityUpdates: false, ennemyVisibilityUpdates: false },
+            areaEffects: [],
+            data: {},
+            tickData: [],
+            preventDoubleUpdates: [],
+            toSend: {
+                physicalChanges: [], //Triggered directly by getNextState, must be identical on both sides
+                updateTriggered: [], //From updateNear, must too be identical bor both (if not somone spawned a structure);
+            },
+            getNextState: function (xc, yc) {
+                var upt = this.data[yc][xc].alive;
+                var v = 0 - Number(this.data[yc][xc].alive);
+                for (let y = -1; y <= 1; y++) {
+                    for (let x = -1; x <= 1; x++) {
+                        if (this.data[y + yc][x + xc].alive) v++; // is cell near alive?
+                    }
+                }
+                if (v == 3) this.prepSpawn(xc, yc, owner);
+                else if (v != 2 && this.data[yc][xc].alive) this.prepKill(xc, yc);
+                return (upt != this.data[yc][xc].alive)
+            },
+            prepSpawn: function (xc, yc, owner) {
+                this.toSend.physicalChanges.push([yc, xc, owner]);
+            },
+            prepKill: function (xc, yc) {
+                this.toSend.physicalChanges.push([yc, xc]);
+            },
+            prepSpawnU: function (xc, yc, owner) {
+                this.toSend.updateTriggered.push([yc, xc, owner]);
+                this.preventDoubleUpdates.push((xc)+","+(yc))
+            },
+            updtTick: function () {
+                this.tickData.forEach(function (element) {
+                    element.forEach(function (element) {
+                        append(element[0], element[1]);
+                    });
+                });
+            },
+            updateNear: function (xc, yc) {
+                var owner = this.data[yc][xc].owner;
+                var array = [];
+                for (let y = -1; y <= 1; y++) {
+                    for (let x = -1; x <= 1; x++) {
+                        if (this.preventDoubleUpdates.indexOf((x + xc)+","+(y + yc)) == -1) { 
+                            if (this.data[y + yc][x + xc].pending[owner]) { this.prepSpawnU(x + xc, y + yc, owner); if (this.settings.recurrentUpdates == true) this.updateNear(x + xc, y + yc); } //this.data[y + yc][x + xc].pending[owner] = false, this.data[y + yc][x + xc].alive = true, this.data[y + yc][x + xc].alive = true; // is there a pending cell of the same team near me?
+                        
+                        }
+                    }
+                }
+                return array;
+            },
+            kill: function (xc, yc) {
+                delete this.data[yc][xc];
+            },
+            spawn: function (xc, yc, owner) {
+                if (!this.data[yc]) this.data[yc] = {};
+                if (!this.data[yc][xc]) this.data[yc][xc] = {};
+                if (!this.data[yc][xc].alive) {
+                    if (!this.data[yc][xc].pending) this.data[yc][xc].pending = [];
+                    else this.data[yc][xc].pending[owner] = false;
+                    this.data[yc][xc].owner = owner;
+                    this.data[yc][xc].alive = true;
+                    return this.data[yc][xc];
+                } return false;
+            },
+            append: function (xc, yc, owner) {
+                if (!this.data[yc]) this.data[yc] = {};
+                if (!this.data[yc][xc]) this.data[yc][xc] = {};
+                if (!this.data[yc][xc].pending) this.data[yc][xc].pending = [];
+                this.data[yc][xc].pending[owner] = true;
+                return this.data[yc][xc];
+            },
+            //makePre: function (xc, yc) {
+            //    if (this.data[yc] && this.data[yc][xc]) this.data[yc][xc].pre = true;
+            //},
+            doAllPre: function () {
+                this.toSend.physicalChanges.forEach(function (element) {
+                    if (typeof (element[2]) == "number") kill(element[0], element[1]);
+                    else spawn(element[0], element[1], element[2]);
+                });
+                this.toSend.updateTriggered.forEach(function (element) {
+                    spawn(element[0], element[1], element[2]);
+                });
+                //if (this.data[yc] && this.data[yc][xc]) delete this.data[yc][xc].pre;
+            },
+            tick: function () {
+                this.preventDoubleUpdates = [];
+                this.toSend = { physicalChanges: [], updateTriggered: [] };
+                var a = new Date();
+                this.data.forEach(y => {
+                    this.data[y].forEach(x => {
+                        if (this.getNextState(x, y)) {
+                            this.updateNear(x, y)
+                        };
+                    });
+                });
+                this.doAllPre();
+                var b = new Date();
+                //stats.arr[1].li.push(b - a);
+            },
+        };
+        var gol = {
+            //Changed mind, all server-side :)
+            data: {},
+            retrievedData: {
+                physicalChanges: [], //Triggered directly by getNextState, must be identical on both sides
+                updateTriggered: [], //From updateNear, must too be identical bor both (if not somone spawned a structure);
+            },
+            toSend: {
+                appended: [], //Will be send to the other players !!!MUST BE SERVER-SIDE CAPPED!!! (if array too big, scraps the whole thing, too bad for the cheater);
+                // This method should prevent all one-way cheat (triggers if at least one player seems to have a different board), still some cheats way occur (limited autobuild, able to see other's appends)
+            },
+            blocks: [],
+            data: {},
+            //upt: {},
+            kill: function (xc, yc) {
+                delete this.data[yc][xc];
+            },
+            spawn: function (xc, yc, owner) {
+                if (!this.data[yc]) this.data[yc] = {};
+                if (!this.data[yc][xc]) this.data[yc][xc] = {};
+                if (!this.data[yc][xc].alive) {
+                    if (!this.data[yc][xc].pending) this.data[yc][xc].pending = [];
+                    else this.data[yc][xc].pending[owner] = false;
+                    this.data[yc][xc].owner = owner;
+                    this.data[yc][xc].alive = true;
+                    return this.data[yc][xc];
+                } return false;
+            },
+            append: function (xc, yc, owner) {
+                if (!this.data[yc]) this.data[yc] = {};
+                if (!this.data[yc][xc]) this.data[yc][xc] = {};
+                if (!this.data[yc][xc].pending) this.data[yc][xc].pending = [];
+                this.data[yc][xc].pending[owner] = true;
+                return this.data[yc][xc];
+            },
+            tick: function () {
+                var a = new Date();
+                this.doAllPre();
+                var b = new Date();
+                //stats.arr[1].li.push(b - a);
+            },
+            doAllPre: function () {
+                this.retrievedData.physicalChanges.forEach(function (element) {
+                    if (typeof (element[2]) == "number") kill(element[0], element[1]);
+                    else spawn(element[0], element[1], element[2]);
+                });
+                this.retrievedData.updateTriggered.forEach(function (element) {
+                    spawn(element[0], element[1], element[2]);
+                });
+                //if (this.data[yc] && this.data[yc][xc]) delete this.data[yc][xc].pre;
+            },
+        };
+        var size = 25;
+        width = window.innerWidth;
+        height = window.innerHeight;
+        update = false;
+        game = document.getElementById('game');
+        function build() {
+            game.innerHTML = "";
+            for (let yc = -Math.ceil((width + key.pos.y) / size / 2); yc <= Math.ceil((width + key.pos.y) / size / 2); yc++) {
+                for (let xc = -Math.ceil((height + key.pos.x) / size / 2); xc <= Math.ceil((height + key.pos.x) / size / 2); xc++) {
+                    var y = yc * size + 0.5 * width;
+                    var x = xc * size + 0.5 * height;
+                    game.innerHTML += "<button class='" + ((gol.data[yc] && gol.data[yc][xc] && gol.data[yc][xc].alive) ? "alive" : ((gol.data[yc] && gol.data[yc][xc] && gol.data[yc][xc].pending[owner]) ? "pending" : "dead")) 
+                    + "' id='" + yc + "," + xc + "' style='position:absolute;left:" + x + ";top:" + y + ";width:"+size+";height:"+size+";' onclick='clicked(" + yc + "," + xc + ")'></button>"
+                }
+            }
+        }
+        function clicked(y, x) {
+            if (key.val.keyE) {
+                //send to server immediately
+            } else {
+                //send to server next request 
+                gol.append(x, y);
+            }
+
+        }
+        function color(x, y, type) {
+            if (document.getElementById(y+","+x)) document.getElementById(y+","+x).className = type; 
+        }
+        function tick() {
+            key.action();
+        }
+        var key = {
+            spd: 5,
+            toogles: {},
+            enable: false,
+            restrict: false,
+            addKey: function (key, action, param = void ("")) {
+                this.setKeyVal(key);
+                this.setKeyAct(key, action);
+                this.setKeyPar(key, param)
+            },
+            addTgl: function (key) {
+                this.setKeyVal(key);
+            },
+            setKeyVal: function (k) { key.state[key.state.length] = k; key.val[k] = false; },
+            setKeyAct: function (k, act) { key.act[k] = act; },
+            setKeyPar: function (k, par) { key.par[k] = par },
+            restrictions: function (x1, x2, y1, y2) {
+                key.border.xMin = x1; key.border.xMax = x2; key.border.yMin = y1; key.border.yMax = y2; key.restrict = true;
+            },
+            border: { xMin: 0, xMax: 1, yMin: 0, yMax: 1 },
+            pos: { x: 0, y: 0 },
+            state: [],
+            val: {},
+            act: {},
+            par: {},
+            action: function () {
+                var t = 0;
+                if (key.enable) {
+                    for (let t = 0; t < key.state.length; t++) {
+                        i = key.val[key.state[t]];
+                        if (i == true) { key.act[key.state[t]](key.par[key.state[t]]); }
+                    }
+                    if (key.restrict) {
+                        if (key.border.xMin >= key.pos.x) key.pos.x = key.border.xMin;
+                        else if (key.border.xMax <= key.pos.x) key.pos.x = key.border.xMax;
+                        if (key.border.yMin >= key.pos.y) key.pos.y = key.border.yMin;
+                        else if (key.border.yMax <= key.pos.y) key.pos.y = key.border.yMax;
+                    }
+                }
+            }
+        };
+        document.addEventListener("keydown", function (e) {
+            e = e || event; // to deal with IE
+            key.val[e.code] = e.type == 'keydown';
+        });
+        document.addEventListener("keyup", function (e) {
+            e = e || event; // to deal with IE
+            key.val[e.code] = e.type == 'keydown'
+        });
+        document.addEventListener("wheel", function (e) {
+            e = e || event; // to deal with IE
+            size = (e.deltaY > 0 ? size * 2 : size / 2);
+            update = true;
+        });
+        key.addKey("ArrowUp", function () { key.pos.y += 5, update = true; });
+        key.addKey("ArrowLeft", function () { key.pos.x += 5, update = true; });
+        key.addKey("ArrowRight", function () { key.pos.x -= 5, update = true; });
+        key.addKey("ArrowDown", function () { key.pos.y -= 5, update = true; });
+        key.addTgl("KeyE");
+    </script>
+</body>
+
+</html>

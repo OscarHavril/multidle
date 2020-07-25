@@ -186,25 +186,73 @@ knuth = (a, b, c) => b < 2 || c < 1 ? a ** c : knuth(a, b - 1, knuth(a, b, c - 1
 sortgrow = (array) => array.sort(function (a, b) { return a - b; });
 delta = (a, b = 0, c = 0) => b ** 2 - 4 * a * c;
 isMultipleOf = (i, a) => i / a == Math.abs(i / a);
+oval = (a, b) => 2 * pi * Math.sqrt((a ** 2 + b ** 2) / 2);
+factorial = (a) => a <= 1 ? a : a * factorial(--a);
+Number.prototype.restrict = function (min, max) { if (min > this) return min; else if (max < this) return max; return this };
+Array.prototype.flatten = function () { return this.reduce(function (flat, toFlatten) { return flat.concat(Array.isArray(toFlatten) ? flatten(toFlatten) : toFlatten); }, []); }
 Array.prototype.max = function () { return Math.max.apply(null, this); }
 Array.prototype.min = function () { return Math.min.apply(null, this); }
 Array.prototype.copy = function () { return JSON.parse(JSON.stringify(this)); }
+Array.prototype.avg = function () { return (total(this) / this.length); }
+// Array.prototype.contains = function () 
+function randomAdress(len) {
+    var str = "";
+    var chars = ["1","2","3","4","5","6","7","8","9","0","a","z","e","r","t","y","u","i","o","p","q","s","d","f","g","h","j","k","l","m","w","x","c","v","b","n","A","Z","E","R","T","Y","U","I","O","P","Q","S","D","F","G","H","J","K","L","M","W","X","C","V","B","N"]
+    for (let i = 0; i < len; i++) {
+        str += char[Math.floor(Math.random() * char.length)];
+    }
+    return str;
+}
 function hyperBilinInterp(array, power) {
-    power = 1 - 0.5 * power;
-    var result = [];
-    for (let gy = 1; gy < array.length - 1; gy++) {
+    var result = array.copy();
+    for (let gy = 1; gy < result.length - 1; gy++) {
         var res = [];
-        for (let gx = 1; gx < array[gy].length - 1; gx++) {
+        for (let gx = 1; gx < result[gy].length - 1; gx++) {
             var arr = [];
-            for (let y = 0; y < array[gy][gx].length; y++) {
+            for (let y = 0; y < result[gy][gx].length; y++) {
                 var a = [];
-                for (let x = 0; x < array[gy][gx][y].length; x++) {
+                for (let x = 0; x < result[gy][gx][y].length; x++) {
                     //derivative of perlin ?
                     //AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
                     //dist to border ?
 
-
-                    // cx/cy distance to center
+                    // New thingy: blur
+                    /*size = Math.floor(mix(0, array[gy][gx].length, power)/2);
+                    var item = [];
+                    for (let dy = -size; dy <= size; dy++) {
+                        var itm = [];
+                        ay = 0;
+                        if (dy + y < 0) ay = array[gy][gx].length, sy = -1;
+                        if (dy + y >= array[gy][gx].length) ay = -array[gy][gx].length, sy = 1;
+                        for (let dx = -size; dx <= size; dx++) {
+                            ax = 0;
+                            if (dx + x < 0) ax = array[gy][gx].length, sx = -1;
+                            if (dx + x >= array[gy][gx].length) ax = -array[gy][gx].length, sx = 1;
+                            if (ay + dy + y < 0 || ay + dy + y >= array[gy][gx].length) console.log(ay, dy, y);
+                            itm.push(array[gy + sy][gx + sx][ay + dy + y][ax + dx + x]);
+                        }
+                        item.push(itm);
+                    }
+                    value = rand.blur(item);*/
+                    size = 1;
+                    var item = [];
+                    for (let dy = -size; dy <= size; dy++) {
+                        var itm = [];
+                        ay = 0;
+                        if (dy + y < 0) ay = result[gy][gx].length, sy = -1;
+                        if (dy + y >= result[gy][gx].length) ay = -result[gy][gx].length, sy = 1;
+                        for (let dx = -size; dx <= size; dx++) {
+                            ax = 0;
+                            if (dx + x < 0) ax = result[gy][gx].length, sx = -1;
+                            if (dx + x >= result[gy][gx].length) ax = -result[gy][gx].length, sx = 1;
+                            if (ay + dy + y < 0 || ay + dy + y >= result[gy][gx].length) console.log(ay, dy, y);
+                            itm.push(result[gy + sy][gx + sx][ay + dy + y][ax + dx + x]);
+                        }
+                        item.push(itm);
+                    }
+                    value = rand.blur(item);
+                    //value = 0.5;
+                    /*// cx/cy distance to center
                     var cx, cy;
                     if (x <= array[gy][gx][y].length / 2) cx = getMix(array[gy][gx][y].length / 2, 0, x); 
                     else cx = getMix(array[gy][gx][y].length / 2, array[gy][gx][y].length, x);
@@ -215,12 +263,12 @@ function hyperBilinInterp(array, power) {
                     var dy = getMix(array[gy][gx - 1].length, array[gy][gx].length + array[gy][gx - 1].length, y + array[gy][gx - 1].length);
                     // set nearest border
                     var sx = 1, sy = 1;
-                    if (dx > 0.5) dx = 1 - dx, sx = -sx;
-                    if (dy > 0.5) dy = 1 - dy, sy = -sy;
+                    if (dx > 0.5) dx = 1-dx, sx = -sx;
+                    if (dy > 0.5) dy = 1-dy, sy = -sy;
                     dx = 2*dx, dy = 2*dy;
                     var cxy = norm(cx, cy);
                     var dxy = norm(dx, dy)/Math.sqrt(2);
-                    var adxy = [1 - dx, 1 - dy];
+                    var adxy = [1-dx, 1-dy];
                     axy = adxy.max();
                     cxy = (cxy+(axy))/2;
                     var r = Math.abs(x - y);
@@ -230,24 +278,29 @@ function hyperBilinInterp(array, power) {
                     if (cx < cy) ay = -sy, rx = Math.floor(mix(0, array[gy + ay][gx + ax].length / 2, dx - sx*(cx/cy)*dy)); // N/S WALL
                     if (ax < 0) rx = array[gy][gx][y].length - 1;
                     if (ay < 0) ry = array[gy][gx].length - 1;
-                    if (dx == 0.5) ry = y;
-                    if (dy == 0.5) rx = x;
+                    //if (dx == 0.5) ry = y;
+                    //if (dy == 0.5) rx = x;
                     //console.log(x, y, dx, dy, cx, cy, rx, ry, ax, ay)
                     //if (sx > 0 && dx <= dy) ax = -1, rx = array[gy][gx][y].length - 1, ry = y; //WEST
                     //else if (sx < 0 && dx <= dy) ax = 1, ry = y; //EAST
                     //if (sy > 0 && dx >= dy) ay = -1, ry = array[gy][gx].length - 1, rx = x; //NORTH
                     //else if (sy < 0 && dx >= dy) ay = 1, rx = x; //SOUTH
                     //var value = mix(array[gy][gx][y][x], array[gy + ay][gx + ax][ry][rx], 1);
-                    var value = mix(array[gy][gx][y][x], array[gy + ay][gx + ax][ry][rx], 1);
-                    a.push(value);
+                    var value = mix(array[gy][gx][y][x], array[gy + ay][gx + ax][ry][rx], 1);*/
+                    result[gy][gx][y][x] = value;
+                    //a.push(value);
                 }
-                arr.push(a);
+                //arr.push(a);
             }
-            res.push(arr);
+            //res.push(arr);
         }
-        result.push(res);
+        //result.push(res);
     }
     return result
+}
+function clrTransition(med, eq, a) {
+    //Blue to red for now
+    return [Math.round(255 * getMix(med - eq, med + eq, a)), 0, Math.round(255 * getMix(med + eq, med - eq, a))];
 }
 function toTimeFormat(a) {
     var r = "";
@@ -320,7 +373,7 @@ function angle(a, b) {
 }
 var stats = {
     arr: [],
-    create: function () { stats.arr[stats.arr.length] = { li: [] }; },
+    create: function () { stats.arr[stats.arr.length] = { li: [] }; return stats.arr.length - 1; },
     sigma: function (array, moy) {
         var t = 0;
         for (let i = 0; i < array.length; i++) t += (array[i] - moy) ** 2;
@@ -342,12 +395,60 @@ var stats = {
         (stats.arr[n].li.length / 2 != Math.round(stats.arr[n].li.length / 2) ? stats.arr[n].med = mix(stats.arr[n].li[stats.arr[n].li.length / 2 - 0.5], stats.arr[n].li[stats.arr[n].li.length / 2 + 0.5], 0.5) : stats.arr[n].med = stats.arr[n].li[stats.arr[n].li.length / 2]);
         stats.arr[n].q1 = stats.arr[n].li[Math.round(stats.arr[n].li.length / 4)];
         stats.arr[n].q3 = stats.arr[n].li[Math.round(3 * stats.arr[n].li.length / 4)];
-        stats.arr[n].moy = total(stats.arr[n].li) / stats.arr[n].li.length;
+        stats.arr[n].moy = stats.arr[n].li.avg();
         stats.arr[n].standEq = stats.sigma(stats.arr[n].li, stats.arr[n].moy);
         stats.arr[n].standErr = stats.arr[n].standEq / Math.sqrt(stats.arr[n].li.length);
         stats.arr[n].var = stats.arr[n].standEq ** 2;
         stats.arr[n].distr = stats.distr(stats.arr[n].li)
         return stats.arr[n]
+    },
+    freq: function (n, len) {
+        stats.arr[n].frq = [];
+        for (let i = 0; i < len; i++) stats.arr[n].frq[i] = 0;
+        for (let i = 0; i < stats.arr[n].li.length; i++) stats.arr[n].frq[Math.floor(len * getMix(stats.arr[n].xMin, stats.arr[n].xMax, stats.arr[n].li[i]))] += 1, console.log(Math.floor(len * getMix(stats.arr[n].xMin, stats.arr[n].xMax, stats.arr[n].li[i])));
+        for (let i = 0; i < stats.arr[n].frq.length; i++) stats.arr[n].frq[i] = stats.arr[n].frq[i] / stats.arr[n].li.length;
+        return stats.arr[n].frq
+    },
+    dispFrq: function (n, disp, l, txtBox) {
+        disp.width = stats.arr[n].frq.length;
+        disp.height = l;
+        var dat = disp.getContext("2d").createImageData(stats.arr[n].frq.length, l);
+        var med = 1 / stats.arr[n].frq.length;
+        stats.arr[n].medFrq = med;
+        var max = stats.arr[n].frq.max();
+        stats.arr[n].maxFrq = max;
+        var min = stats.arr[n].frq.min();
+        stats.arr[n].minFrq = min;
+        var eq = [Math.abs(max - med), Math.abs(min - med)].max();
+        stats.arr[n].eqFrq = eq;
+        var array = [];
+        for (let i = 0; i < stats.arr[n].frq.length; i++) {
+            array[i] = clrTransition(med, eq, stats.arr[n].frq[i]);
+        }
+        for (let y = 0; y < l; y++) {
+            for (let x = 0; x < stats.arr[n].frq.length; x++) {
+                dat.data[4 * x + stats.arr[n].frq.length * 4 * y + 0] = array[x][0];
+                dat.data[4 * x + stats.arr[n].frq.length * 4 * y + 1] = array[x][1];
+                dat.data[4 * x + stats.arr[n].frq.length * 4 * y + 2] = array[x][2];
+                dat.data[4 * x + stats.arr[n].frq.length * 4 * y + 3] = 255;
+            }
+        }
+        disp.getContext("2d").putImageData(dat, 0, 0);
+        cursor.enable = true;
+        stats.hoverFrq(n, disp, txtBox);
+        return dat
+    },
+    hoverFrq: function (n, disp, txtBox) {
+        if (cursor.x <= disp.width && cursor.y <= disp.height) {
+            txtBox.style.left = (cursor.x) + "px";
+            txtBox.style.top = (cursor.y - 18) + "px";
+            if (stats.arr[n].frq[cursor.x] >= stats.arr[n].medFrq) {
+                txtBox.innerHTML = "+" + (Math.round(getMix(stats.arr[n].medFrq, stats.arr[n].medFrq + stats.arr[n].eqFrq, stats.arr[n].frq[cursor.x]) * 1000) / 10) + "%";
+            } else {
+                txtBox.innerHTML = "-" + (Math.round(getMix(stats.arr[n].medFrq - stats.arr[n].eqFrq, stats.arr[n].medFrq, stats.arr[n].frq[cursor.x]) * 1000) / 10) + "%";
+            }
+        }
+        setTimeout(stats.hoverFrq, 10, n, disp, txtBox);
     }
 };
 var rand = {
@@ -359,7 +460,7 @@ var rand = {
         rand.step = 1 / (rand.mult ** 2);
         rand.xlc = Math.sqrt(rand.mult + rand.mod + rand.step);
     },
-    permutation: [151,160,137,91,90,15,131,13,201,95,96,53,194,233,7,225,140,36,103,30,69,142,8,99,37,240,21,10,23,190, 6,148,247,120,234,75,0,26,197,62,94,252,219,203,117,35,11,32,57,177,33,88,237,149,56,87,174,20,125,136,171,168, 68,175,74,165,71,134,139,48,27,166,77,146,158,231,83,111,229,122,60,211,133,230,220,105,92,41,55,46,245,40,244,102,143,54, 65,25,63,161, 1,216,80,73,209,76,132,187,208, 89,18,169,200,196,135,130,116,188,159,86,164,100,109,198,173,186, 3,64,52,217,226,250,124,123,5,202,38,147,118,126,255,82,85,212,207,206,59,227,47,16,58,17,182,189,28,42,223,183,170,213,119,248,152, 2,44,154,163, 70,221,153,101,155,167, 43,172,9,129,22,39,253, 19,98,108,110,79,113,224,232,178,185, 112,104,218,246,97,228,251,34,242,193,238,210,144,12,191,179,162,241, 81,51,145,235,249,14,239,107,49,192,214, 31,181,199,106,157,184, 84,204,176,115,121,50,45,127, 4,150,254,138,236,205,93,222,114,67,29,24,72,243,141,128,195,78,66,215,61,156,180],
+    permutation: [151, 160, 137, 91, 90, 15, 131, 13, 201, 95, 96, 53, 194, 233, 7, 225, 140, 36, 103, 30, 69, 142, 8, 99, 37, 240, 21, 10, 23, 190, 6, 148, 247, 120, 234, 75, 0, 26, 197, 62, 94, 252, 219, 203, 117, 35, 11, 32, 57, 177, 33, 88, 237, 149, 56, 87, 174, 20, 125, 136, 171, 168, 68, 175, 74, 165, 71, 134, 139, 48, 27, 166, 77, 146, 158, 231, 83, 111, 229, 122, 60, 211, 133, 230, 220, 105, 92, 41, 55, 46, 245, 40, 244, 102, 143, 54, 65, 25, 63, 161, 1, 216, 80, 73, 209, 76, 132, 187, 208, 89, 18, 169, 200, 196, 135, 130, 116, 188, 159, 86, 164, 100, 109, 198, 173, 186, 3, 64, 52, 217, 226, 250, 124, 123, 5, 202, 38, 147, 118, 126, 255, 82, 85, 212, 207, 206, 59, 227, 47, 16, 58, 17, 182, 189, 28, 42, 223, 183, 170, 213, 119, 248, 152, 2, 44, 154, 163, 70, 221, 153, 101, 155, 167, 43, 172, 9, 129, 22, 39, 253, 19, 98, 108, 110, 79, 113, 224, 232, 178, 185, 112, 104, 218, 246, 97, 228, 251, 34, 242, 193, 238, 210, 144, 12, 191, 179, 162, 241, 81, 51, 145, 235, 249, 14, 239, 107, 49, 192, 214, 31, 181, 199, 106, 157, 184, 84, 204, 176, 115, 121, 50, 45, 127, 4, 150, 254, 138, 236, 205, 93, 222, 114, 67, 29, 24, 72, 243, 141, 128, 195, 78, 66, 215, 61, 156, 180],
     step: .05,
     len: 20,
     xlc: 0,
@@ -376,11 +477,11 @@ var rand = {
     grdRand: function (ax, ay) {
         //Loads gradient vectors for a given table size
         var arr = [];
-        for (y = 0; y < ay+1; y++) {
+        for (y = 0; y < ay + 1; y++) {
             var a = [];
-            for (x = 0; x < ax+1; x++) {
+            for (x = 0; x < ax + 1; x++) {
                 //r = [rand.int(-1,1), rand.int(-1,1)];
-                r = [ 2 * rand.lcg() - 1, 2 * rand.lcg() - 1];
+                r = [2 * rand.lcg() - 1, 2 * rand.lcg() - 1];
                 a.push(r);
             }
             arr.push(a);
@@ -405,14 +506,14 @@ var rand = {
         var arr = [];
         var v = [];
         v[0] = rand.grdMap[ay][ax]; v[1] = rand.grdMap[ay][ax + 1];
-        v[2] = rand.grdMap[ay + 1][ax]; v[3] = rand.grdMap[ay + 1][ax + 1]; 
+        v[2] = rand.grdMap[ay + 1][ax]; v[3] = rand.grdMap[ay + 1][ax + 1];
         //PLEASE use contants for sx and sy.
         for (y = 0; y < sy; y++) {
             var a = [];
             for (x = 0; x < sx; x++) {
                 //Distance of point to each border
-                var dx = getMix(0,sx,x);
-                var dy = getMix(0,sy,y);
+                var dx = getMix(0, sx, x);
+                var dy = getMix(0, sy, y);
                 var dxy = [];
                 dxy[0] = [dy, dx]; dxy[1] = [dy, 1 - dx];
                 dxy[2] = [1 - dy, dx]; dxy[3] = [1 - dy, 1 - dx];
@@ -460,6 +561,7 @@ var rand = {
         for (let i = -Math.ceil(rand.len / 2); i < Math.floor(rand.len / 2); i++) t += (1 / (i + 1 + Math.ceil(rand.len / 2))) ** (1 / 3) * Math.sin(i ** 2 * x * rand.step + rand.seed * (i + 1));
         return .5 * Math.cos(64 * pi * t) + .5
     },
+    sign: (x = Math.random()) => (x > 0.5 ? 1 : -1),
     int: (a, b, x = Math.random()) => Math.round(a + rand.lcg() * (b - a)),
     real: function (a, b, acc = -1, x = Math.random()) {
         return (acc >= 0 ? Math.round((a + Math.random() * (b - a)) * (10 ** acc)) / (10 ** acc) : a + Math.random() * (b - a))
@@ -808,6 +910,33 @@ var rand = {
                 return rand.map.elem
             }
         }
+    },
+    smartBlur: function (array) {
+        //console.log(array);
+        var value = 0, size = Math.floor(array.length / 2), initialSize = size;
+        while (size >= 1) {
+            var a = 0;
+            for (let y = -Math.floor(size); y <= Math.ceil(size); y++) {
+                for (let x = -Math.floor(size); x <= Math.floor(size); x++) {
+                    //console.log(y, x, initialSize);
+                    a += array[y + initialSize][x + initialSize];
+                    //console.log(a);
+                }
+            }
+            value += (a / ((size * 2) ** 2)) * size, size /= 2;
+        }
+        return (0.5 * value / initialSize);
+    },
+    blur: function (array) {
+        var a = 0;
+        for (let y = 0; y < array.length; y++) {
+            for (let x = 0; x < array.length; x++) {
+                //console.log(y, x, initialSize);
+                a += array[y][x];
+                //console.log(a);
+            }
+        }
+        return (a / array.length ** 2);
     }
 };
 var sound = {
@@ -1004,18 +1133,190 @@ var sentence = {
         }
     },
 };
-var bubble = {
-    data: [],
+var gol_SERVER = {
+    data: {},
+    tickData: [],
+    toSend: {
+        physicalChanges: [], //Triggered directly by getNextState, must be identical on both sides
+        updateTriggered: [], //From updateNear, must too be identical bor both (if not somone spawned a structure);
+    },
+    getNextState: function (xc, yc) {
+        var upt = this.data[yc][xc].alive;
+        var v = 0 - Number(this.data[yc][xc].alive);
+        for (let y = -1; y <= 1; y++) {
+            for (let x = -1; x <= 1; x++) {
+                if (this.data[y + yc][x + xc].alive) v++; // is cell near alive?
+            }
+        }
+        if (v == 3) this.prepSpawn(xc, yc, owner);
+        else if (v != 2 && this.data[yc][xc].alive) this.prepKill(xc, yc);
+        return (upt != this.data[yc][xc].alive)
+    },
+    prepSpawn: function (xc, yc, owner) {
+        this.toSend.physicalChanges.push([yc, xc, owner]);
+    },
+    prepKill: function (xc, yc) {
+        this.toSend.physicalChanges.push([yc, xc]);
+    },
+    prepSpawnU: function (xc, yc, owner) {
+        this.toSend.updateTriggered.push([yc, xc, owner]);
+    },
+    updateNear: function (xc, yc) {
+        var owner = this.data[yc][xc].owner;
+        var array = [];
+        for (let y = -1; y <= 1; y++) {
+            for (let x = -1; x <= 1; x++) {
+                if (this.data[y + yc][x + xc].pending[owner]) this.data[y + yc][x + xc].pending[owner] = false, this.data[y + yc][x + xc].alive = true, this.data[y + yc][x + xc].alive = true; // is there a pending cell of the same team near me?
+            }
+        }
+        return array;
+    },
+    kill: function (xc, yc) {
+        delete this.data[yc][xc];
+    },
+    spawn: function (xc, yc, owner) {
+        if (!this.data[yc]) this.data[yc] = {};
+        if (!this.data[yc][xc]) this.data[yc][xc] = {};
+        if (!this.data[yc][xc].alive) {
+            if (!this.data[yc][xc].pending) this.data[yc][xc].pending = [];
+            else this.data[yc][xc].pending[owner] = false;
+            this.data[yc][xc].owner = owner;
+            this.data[yc][xc].alive = true;
+            return this.data[yc][xc];
+        } return false;
+    },
+    append: function (xc, yc, owner) {
+        if (!this.data[yc]) this.data[yc] = {};
+        if (!this.data[yc][xc]) this.data[yc][xc] = {};
+        if (!this.data[yc][xc].pending) this.data[yc][xc].pending = [];
+        this.data[yc][xc].pending[owner] = true;
+        return this.data[yc][xc];
+    },
+    makePre: function (xc, yc) {
+        if (this.data[yc] && this.data[yc][xc]) this.data[yc][xc].pre = true;
+    },
+    removePre: function (xc, yc) {
+        if (this.data[yc] && this.data[yc][xc]) delete this.data[yc][xc].pre;
+    },
+    tick: function () {
+        var a = new Date();
+        this.data.forEach(y => {
+            this.data[y].forEach(x => {
+                if (this.getNextState(x, y)) { 
+                    this.toSend.physicalChanges.push([y, x]);
+                    this.updateNear(x, y) 
+                };
+            });
+        });
+        this.data = {...this.data, ...this.upt};
+        var b = new Date();
+        stats.arr[1].li.push(b - a);
+    },
+};
+var gol = {
+    //Changed mind, all server-side :)
+    
+    retrievedData: {
+        physicalChanges: [], //Triggered directly by getNextState, must be identical on both sides
+        updateTriggered: [], //From updateNear, must too be identical bor both (if not somone spawned a structure);
+    },
+    toSend: { 
+        appended: [], //Will be send to the other players !!!MUST BE SERVER-SIDE CAPPED!!! (if array too big, scraps the whole thing, too bad for the cheater);
+        // This method should prevent all one-way cheat (triggers if at least one player seems to have a different board), still some cheats way occur (limited autobuild, able to see other's appends)
+    },
+    blocks: [],
+    data: {},
+    //upt: {},
+
+};
+var material = {
+    materialsList: [],
+    /*Block: function () {
+        arguments = arguments.flatten();
+        for (let i = 0; i < arguments.length; i+= 2) {
+            for (let z = 0; z < material.materialsList.length; z++) {
+                if (material.materialsList[z] == arguments[i]) {}
+                
+            }
+        }
+    },*/
+    Material: function (name) {
+        //this.name = name;
+        this.herit = undefined;
+        this.solidity = 1; // water, air (0) or stone (near 1), also helps with deformability (eg. iron would be at 0.95 so can be deformed I guess but diamond at 0.999 nop);
+        this.adherence = 0; // [a > 0 : sticky] [a < 0 : icyish], just cool behavior;
+        this.hardeness = 1; // general hardness, uuh yeh
+        this.fibrism = 0; // % of fibers
+        this.bucketPower = 0; // Boulder size
+        this.fusionTemp = 0;
+        this.meltTemp = 0;
+        material.materialsList.push(this);
+    },
+    Crafter: function () {
+
+    },
+    Anvil: function (type) {
+        //if (type == "")
+    },
+    Smelter: function (inputs, outputs) {
+        this.start = function () {  }
+        this.innerTemp = 0;
+        this.started = -1;
+        /*if (typeof (arguments[0]) == "string") {
+            if (arguments[0] == "smelt") {
+                this.fuel = ["", 0];
+            }
+            if (arguments[0] == "craft") {
+
+            }
+        } else if (typeof (arguments[0]) == "object") {
+            arguments[0].forEach(element => {
+                if (element == "smelt") {
+                    this.fuel = ["", 0];
+                }
+            });
+        }*/
+    },
+    Item: function () {
+        // Implement all dat shit better
+        this.temp = 0;
+        this.flexibilty = 0.5; // Breaks or shifts shape
+        this.sharpness = 1; // the lower the higher the sharpness, the higher the moar roundish it is;
+        this.mass = 0; // Straightforward i gwess NNEEED UNIT
+        this.hitbox = 1; // Hitbox lengh  NNEEED UNIT
+        this.structuralDeterioration = 0; // Helps to know how much something is fucked up and about to break
+        this.materials = []; // top to bottom
+    },
+};
+//material.Bench.prototype.action = undefined;
+material.Material.prototype.herit = undefined;
+var particle = {
+    /*data: [],
     settings: {
         rangeEffectArea: 100,
         generalBehavior: 0,
         generalRangeEffect: 0,
         restricted: false,
         restrictions: { xMin: 0, xMax: 1, yMin: 0, yMax: 1 }
+    },*/
+    System: function () {
+        this.settings = {
+            rangeEffectArea: 100,
+            generalBehavior: 0,
+            generalRangeEffect: 0,
+            restricted: { north: false, south: false, east: false, weast: false },
+            restrictions: { xMin: 0, xMax: 1, yMin: 0, yMax: 1 },
+        };
+        this.data = [];
+        this.exec = particle.tick;
+        this.restrict = particle.restrict;
     },
-    restrict: function (x1, x2, y1, y2) {
-        bubble.settings.restrictions.xMin = x1; bubble.settings.restrictions.xMax = x2; bubble.settings.restrictions.yMin = y1; bubble.settings.restrictions.yMax = y2; bubble.settings.restricted = true;
-    },
+    /*restrict: {
+        north: function (a) { this.parentEl re}
+        south:
+        east:
+        west: //AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHHHHH
+        },*/
     create: function (x, y, speed = 5, rs = .1, angle = 0) {
         this.data.push({ angle: angle, x: x, y: y, rspeed: rs, speed: speed });
         return this.data[this.data.length - 1]
@@ -1027,41 +1328,41 @@ var bubble = {
         this.data = b.concat(a);
         return d
     },
-    tick: function (i, x, y, t, behavior = bubble.settings.generalBehavior, rangeEffect = bubble.settings.generalRangeEffect, homing = false) {
+    tick: function (i, x, y, t, behavior = this.settings.generalBehavior, rangeEffect = this.settings.generalRangeEffect, homing = false) {
         //TODO: boundaries somehow not working. Fix it.
-        var dx = x - bubble.data[i].x;
-        var dy = y - bubble.data[i].y;
+        var dx = x - this.data[i].x;
+        var dy = y - this.data[i].y;
         var cAngle = Math.atan2(dy, dx);
         var norme = norm(dx, dy);
         if (behavior != 0) {
             if (behavior == -1) { behavior = 0; }
             if (homing == true) {
-                var diff = cAngle - bubble.data[i].angle;
-                var rs = bubble.data[i].rspeed * t;
+                var diff = cAngle - this.data[i].angle;
+                var rs = this.data[i].rspeed * t;
                 if (diff > pi) diff += pi * 2;
                 else if (diff < -pi) diff += pi * 2;
-                if (diff > rs) bubble.data[i].angle += rs + pi + pi * behavior;
-                else if (diff < -rs) bubble.data[i].angle -= rs + pi + pi * behavior;
-                else bubble.data[i].angle = cAngle + pi + pi * behavior;
-            } else bubble.data[i].angle = cAngle + pi + pi * behavior;
+                if (diff > rs) this.data[i].angle += rs + pi + pi * behavior;
+                else if (diff < -rs) this.data[i].angle -= rs + pi + pi * behavior;
+                else this.data[i].angle = cAngle + pi + pi * behavior;
+            } else this.data[i].angle = cAngle + pi + pi * behavior;
         }
-        if (bubble.data[i].angle > pi) bubble.data[i].angle -= 2 * pi;
-        if (bubble.data[i].angle < -pi) bubble.data[i].angle += 2 * pi;
-        x = bubble.data[i].x; y = bubble.data[i].y;
-        x += Math.cos(mix(bubble.data[i].angle, cAngle, (1 / norme * bubble.settings.rangeEffectArea * .1) * rangeEffect)) * t * (bubble.data[i].speed + rangeEffect * (1 / ((1 / bubble.settings.rangeEffectArea) * norme ** 2 + 1)));
-        y += Math.sin(mix(bubble.data[i].angle, cAngle, (1 / norme * bubble.settings.rangeEffectArea * .1) * rangeEffect)) * t * (bubble.data[i].speed + rangeEffect * (1 / ((1 / bubble.settings.rangeEffectArea) * norme ** 2 + 1)));
+        if (this.data[i].angle > pi) this.data[i].angle -= 2 * pi;
+        if (this.data[i].angle < -pi) this.data[i].angle += 2 * pi;
+        x = this.data[i].x; y = this.data[i].y;
+        x += Math.cos(mix(this.data[i].angle, cAngle, (1 / norme * this.settings.rangeEffectArea * .1) * rangeEffect)) * t * (this.data[i].speed + rangeEffect * (1 / ((1 / this.settings.rangeEffectArea) * norme ** 2 + 1)));
+        y += Math.sin(mix(this.data[i].angle, cAngle, (1 / norme * this.settings.rangeEffectArea * .1) * rangeEffect)) * t * (this.data[i].speed + rangeEffect * (1 / ((1 / this.settings.rangeEffectArea) * norme ** 2 + 1)));
         if (this.settings.restricted) {
             /*
-            if (bubble.settings.restrictions.xMin >= x || bubble.settings.restrictions.xMax <= x) { bubble.data[i].angle = pi - bubble.data[i].angle; }
-            // else if () { bubble.data[i].angle = pi - bubble.data[i].angle; }
-            if (bubble.settings.restrictions.yMin >= y || bubble.settings.restrictions.yMax <= y) { bubble.data[i].angle = -bubble.data[i].angle; }
-            // else if () { bubble.data[i].angle = 2 * pi - bubble.data[i].angle; }
-            x = bubble.data[i].x; y = bubble.data[i].y;
-            x += Math.cos(mix(bubble.data[i].angle, cAngle, (1 / norme * bubble.settings.rangeEffectArea * .1) * rangeEffect)) * t * (bubble.data[i].speed + rangeEffect * (1 / ((1 / bubble.settings.rangeEffectArea) * norme + 10)));
-            y += Math.sin(mix(bubble.data[i].angle, cAngle, (1 / norme * bubble.settings.rangeEffectArea * .1) * rangeEffect)) * t * (bubble.data[i].speed + rangeEffect * (1 / ((1 / bubble.settings.rangeEffectArea) * norme + 10)));
+            if (this.settings.restrictions.xMin >= x || this.settings.restrictions.xMax <= x) { this.data[i].angle = pi - this.data[i].angle; }
+            // else if () { this.data[i].angle = pi - this.data[i].angle; }
+            if (this.settings.restrictions.yMin >= y || this.settings.restrictions.yMax <= y) { this.data[i].angle = -this.data[i].angle; }
+            // else if () { this.data[i].angle = 2 * pi - this.data[i].angle; }
+            x = this.data[i].x; y = this.data[i].y;
+            x += Math.cos(mix(this.data[i].angle, cAngle, (1 / norme * this.settings.rangeEffectArea * .1) * rangeEffect)) * t * (this.data[i].speed + rangeEffect * (1 / ((1 / this.settings.rangeEffectArea) * norme + 10)));
+            y += Math.sin(mix(this.data[i].angle, cAngle, (1 / norme * this.settings.rangeEffectArea * .1) * rangeEffect)) * t * (this.data[i].speed + rangeEffect * (1 / ((1 / this.settings.rangeEffectArea) * norme + 10)));
             */
         }
-        bubble.data[i].x = x; bubble.data[i].y = y;
+        this.data[i].x = x; this.data[i].y = y;
         return this.data[i]
     },
     edit: function (i, x, y, speed = 5, rs = .1, angle = 0) { this.data[i] = { angle: angle, x: x, y: y, rspeed: rs, speed: speed }; }
@@ -1276,12 +1577,14 @@ var tiled = {
         } return coordinates
     },
     loadChunk: function (disp, coordinates, layer, isRaw = false) {
+        console.log(coordinates);
         var c = tiled.getChunkId(coordinates);
-        if (c != null) {
+        if (c != -1) {
             var s = tiled.settings.chunkSize; var b = tiled.settings.blockSize; var p = tiled.settings.pixelSize; var chkData;
             if (isRaw) {
                 chkData = tiled.map[c].raw[layer];
             } else {
+                //console.log(c);
                 chkData = tiled.map[c].data[layer];
             }
             var dat = disp.getContext("2d").createImageData(s * b * p, s * b * p);
@@ -1404,7 +1707,7 @@ var tiled = {
                     i++;
                 }
             }
-            arr = hyperBilinInterp(arr, 0.5);
+            arr = hyperBilinInterp(arr, 0.2);
             return arr;
         }
     },
@@ -1504,7 +1807,7 @@ var tiled = {
                 for (let l = 0; l < tiled.settings.layers; l++) {
                     for (let s = 0; s < tiled.settings.subLevels; s++) {
                         //var arr = rand.polygen2D(x + size + 1, y + size + 1, tiled.settings.chunkSize, tiled.settings.chunkSize);
-                        var arr = generator( tiled.settings.chunkSize, tiled.settings.chunkSize);
+                        var arr = generator(tiled.settings.chunkSize, tiled.settings.chunkSize);
                         tiled.Fill([y, x], l, s, arr, true);
                     }
                 }
@@ -1514,7 +1817,7 @@ var tiled = {
             for (let x = -size; x < size + 1; x++) {
                 for (let l = 0; l < tiled.settings.layers; l++) {
                     for (let s = 0; s < tiled.settings.subLevels; s++) {
-                        var arr = tiled.smoothen([y,x], l, s); arr = arr[0][0];
+                        var arr = tiled.smoothen([y, x], l, s); arr = arr[1][1];
                         //var arr = tiled.map[tiled.getChunkId([y, x])].raw[l][s];
                         tiled.Fill([y, x], l, s, arr);
                     }
